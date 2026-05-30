@@ -1,0 +1,549 @@
+import { useMemo } from "react";
+import { Flex, Text, Heading, Box, Button, Table, Grid } from "@radix-ui/themes";
+import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon } from "@radix-ui/react-icons";
+import type { TaxInput } from "../engine/types";
+import { calculateRegime, npr } from "../engine/taxEngine";
+import { oldRegime, newRegime } from "../engine/scenarios";
+import RegimeView from "./RegimeView";
+import { useIsDesktop } from "../hooks/useIsDesktop";
+
+interface Props {
+  input: TaxInput;
+  onBack?: () => void;
+}
+
+export default function Calculation({ input, onBack }: Props) {
+  const isDesktop = useIsDesktop();
+  const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
+  const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
+
+  const savingsYearly = oldResult.totalTaxYearly - newResult.totalTaxYearly;
+  const savingsMonthly = oldResult.totalTaxMonthly - newResult.totalTaxMonthly;
+  const newIsBetter = savingsYearly > 0;
+  const oldIsBetter = savingsYearly < 0;
+  const neutral = Math.abs(savingsYearly) < 1;
+  const hasTaxableIncome = oldResult.taxableIncome > 0 || newResult.taxableIncome > 0;
+
+  const accent = neutral ? "gray" : newIsBetter ? "teal" : "indigo";
+
+  const oldSlabsInfo: [string, string][] =
+    input.taxpayerType === "couple"
+      ? [
+          ["Up to 6,00,000", "1% (0% SSF)"],
+          ["6L – 8L", "10%"],
+          ["8L – 11L", "20%"],
+          ["11L – 20L", "30%"],
+          ["20L – 50L", "36%"],
+          ["Above 50L", "39%"],
+        ]
+      : [
+          ["Up to 5,00,000", "1% (0% SSF)"],
+          ["5L – 7L", "10%"],
+          ["7L – 10L", "20%"],
+          ["10L – 20L", "30%"],
+          ["20L – 50L", "36%"],
+          ["Above 50L", "39%"],
+        ];
+
+  const newSlabsInfo: [string, string][] = [
+    ["Up to 10,00,000", "1% (0% SSF)"],
+    ["10L – 15L", "10%"],
+    ["15L – 25L", "20%"],
+    ["25L – 40L", "27%"],
+    ["Above 40L", "29%"],
+  ];
+
+  const tableRows = [
+    { label: "Income Tax (Yearly)", old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
+    { label: "Income Tax (Monthly)", old: oldResult.totalTaxMonthly, new: newResult.totalTaxMonthly },
+    { label: "Effective Rate", old: oldResult.effectiveRate * 100, new: newResult.effectiveRate * 100, isPercent: true },
+    { label: "Net Income (Yearly)", old: oldResult.netIncomeYearly, new: newResult.netIncomeYearly },
+    { label: "Net Income (Monthly)", old: oldResult.netIncomeMonthly, new: newResult.netIncomeMonthly },
+    { label: "Cash in Hand (Yearly)", old: input.income.salary - oldResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit), new: input.income.salary - newResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit) },
+    { label: "Cash in Hand (Monthly)", old: (input.income.salary / input.months) - oldResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months), new: (input.income.salary / input.months) - newResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months) },
+  ];
+
+  return (
+    <Flex direction="column" gap="4" pb="6" className="content-fade">
+      {/* Savings hero banner */}
+      <Box
+        className="hero-gradient elegant-card"
+        p="5"
+        style={
+          neutral
+            ? undefined
+            : {
+                background: `linear-gradient(135deg, var(--${accent}-3), var(--${accent}-2))`,
+                borderColor: `var(--${accent}-a5)`,
+              }
+        }
+      >
+        {neutral ? (
+          <Box style={{ textAlign: "center" }}>
+            <Text size="3" weight="bold" as="div" mb="2" style={{ color: "var(--gray-11)" }}>
+              No Savings Difference
+            </Text>
+            <Text size="2" color="gray" as="div" style={{ lineHeight: 1.5 }}>
+              Both regimes result in the same tax amount. But hey, at least you're consistent! 🎯
+            </Text>
+          </Box>
+        ) : (
+          <Box style={{ position: "relative" }}>
+            <Flex align="center" gap="1" mb="3">
+              <Box
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 22,
+                  height: 22,
+                  borderRadius: 9999,
+                  background: newIsBetter ? `var(--${accent}-11)` : "var(--red-9)",
+                  color: "white",
+                }}
+              >
+                {newIsBetter ? <ArrowUpIcon width="14" height="14" /> : <ArrowDownIcon width="14" height="14" />}
+              </Box>
+              <Text
+                size="1"
+                weight="bold"
+                style={{
+                  color: newIsBetter ? `var(--${accent}-11)` : "var(--red-11)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {newIsBetter ? "New slab" : "Old slab"} saves you
+              </Text>
+            </Flex>
+
+            <Flex gap="6" align="end" wrap="wrap">
+              <Box>
+                <Heading
+                  size="8"
+                  as="h2"
+                  weight="bold"
+                  className="tnum"
+                  style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
+                >
+                  {npr(Math.abs(savingsYearly))}
+                </Heading>
+                <Text size="1" color="gray" as="div" mt="1">
+                  per year
+                </Text>
+              </Box>
+              <Box>
+                <Heading
+                  size="6"
+                  as="h3"
+                  weight="bold"
+                  className="tnum"
+                  style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
+                >
+                  {npr(Math.abs(savingsMonthly))}
+                </Heading>
+                <Text size="1" color="gray" as="div" mt="1">
+                  per month
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+        )}
+      </Box>
+
+      {/* Income Summary Cards */}
+      <Grid columns={{ initial: "1", sm: "2", lg: "3" }} gap="3">
+        {/* Gross Salary */}
+        <Box
+          style={{
+            background: "var(--color-panel-solid)",
+            border: "1px solid var(--gray-a4)",
+            borderRadius: "var(--radius-4)",
+            padding: "16px 18px",
+            boxShadow: "0 1px 4px var(--gray-a2)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <Box
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              width: 64,
+              height: 64,
+              borderRadius: 999,
+              background: "var(--green-a3)",
+              filter: "blur(12px)",
+              pointerEvents: "none",
+            }}
+          />
+          <Flex align="center" justify="between" mb="2">
+            <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+              Gross Salary
+            </Text>
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: "var(--green-3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v12M4 6l4-4 4 4M3 14h10" stroke="var(--green-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Box>
+          </Flex>
+          <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
+            {npr(oldResult.totalIncome)}
+          </Text>
+        </Box>
+
+        {/* Allowances + Bonus + Other Incomes */}
+        <Box
+          style={{
+            background: "var(--color-panel-solid)",
+            border: "1px solid var(--gray-a4)",
+            borderRadius: "var(--radius-4)",
+            padding: "16px 18px",
+            boxShadow: "0 1px 4px var(--gray-a2)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <Box
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              width: 64,
+              height: 64,
+              borderRadius: 999,
+              background: "var(--blue-a3)",
+              filter: "blur(12px)",
+              pointerEvents: "none",
+            }}
+          />
+          <Flex align="center" justify="between" mb="2">
+            <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+              Allowances + Bonus
+            </Text>
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: "var(--blue-3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM3 6a5 5 0 1110 0A5 5 0 013 6z" stroke="var(--blue-11)" strokeWidth="1.5"/>
+                <path d="M8 8v5M6 11l2 2 2-2" stroke="var(--blue-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Box>
+          </Flex>
+          <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
+            {npr(oldResult.totalIncome - input.income.salary)}
+          </Text>
+        </Box>
+
+        {/* Deductions */}
+        <Box
+          style={{
+            background: "var(--color-panel-solid)",
+            border: "1px solid var(--gray-a4)",
+            borderRadius: "var(--radius-4)",
+            padding: "16px 18px",
+            boxShadow: "0 1px 4px var(--gray-a2)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <Box
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              width: 64,
+              height: 64,
+              borderRadius: 999,
+              background: "var(--red-a3)",
+              filter: "blur(12px)",
+              pointerEvents: "none",
+            }}
+          />
+          <Flex align="center" justify="between" mb="2">
+            <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+              Deductions
+            </Text>
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: "var(--red-3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 14V2M4 10l4 4 4-4M3 2h10" stroke="var(--red-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Box>
+          </Flex>
+          <Text size="5" weight="bold" className="tnum" style={{ color: "var(--red-11)", lineHeight: 1 }}>
+            −{npr(oldResult.totalDeductions)}
+          </Text>
+        </Box>
+
+        {/* Net Salary */}
+        <Box
+          style={{
+            background: "var(--color-panel-solid)",
+            border: "1px solid var(--gray-a4)",
+            borderRadius: "var(--radius-4)",
+            padding: "16px 18px",
+            boxShadow: "0 1px 4px var(--gray-a2)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <Box
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              width: 64,
+              height: 64,
+              borderRadius: 999,
+              background: "var(--purple-a3)",
+              filter: "blur(12px)",
+              pointerEvents: "none",
+            }}
+          />
+          <Flex align="center" justify="between" mb="2">
+            <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+              Net Salary
+            </Text>
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: "var(--purple-3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v12M4 6l4-4 4 4M3 14h10" stroke="var(--purple-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Box>
+          </Flex>
+          <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
+            {npr(oldResult.netIncomeYearly)}
+          </Text>
+        </Box>
+
+        {/* Taxable Salary */}
+        <Box
+          style={{
+            background: "linear-gradient(135deg, var(--indigo-3), var(--indigo-2))",
+            border: "1px solid var(--indigo-a5)",
+            borderRadius: "var(--radius-4)",
+            padding: "16px 18px",
+            boxShadow: "0 2px 8px var(--indigo-a3)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <Box
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              width: 64,
+              height: 64,
+              borderRadius: 999,
+              background: "var(--indigo-a5)",
+              filter: "blur(16px)",
+              pointerEvents: "none",
+            }}
+          />
+          <Flex align="center" justify="between" mb="2">
+            <Text size="1" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--indigo-11)" }}>
+              Taxable Salary
+            </Text>
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: "var(--indigo-4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="10" width="3" height="4" rx="1" fill="var(--indigo-11)"/>
+                <rect x="6.5" y="6" width="3" height="8" rx="1" fill="var(--indigo-11)" opacity="0.7"/>
+                <rect x="11" y="2" width="3" height="12" rx="1" fill="var(--indigo-11)" opacity="0.5"/>
+              </svg>
+            </Box>
+          </Flex>
+          <Text size="5" weight="bold" className="tnum" style={{ color: "var(--indigo-12)", lineHeight: 1 }}>
+            {npr(oldResult.taxableIncome)}
+          </Text>
+        </Box>
+      </Grid>
+
+      {/* Comparison Table */}
+      <Box
+        style={{
+          background: "var(--gray-1)",
+          border: "1px solid var(--gray-a4)",
+          borderRadius: "var(--radius-4)",
+          overflow: "hidden",
+        }}
+      >
+        <Table.Root variant="ghost" style={{ border: "none", width: "100%" }}>
+          <Table.Header>
+            <Table.Row style={{ background: "var(--gray-3)" }}>
+              <Table.ColumnHeaderCell style={{ color: "var(--gray-11)", fontWeight: 600, padding: "12px 20px", fontSize: 11, letterSpacing: "0.06em", width: "40%" }}>
+                ITEM
+              </Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
+                <Box style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Box style={{ background: "var(--indigo-3)", border: "1px solid var(--indigo-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--indigo-9)" }} />
+                    <Text size="1" style={{ color: "var(--indigo-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>OLD SLAB</Text>
+                  </Box>
+                </Box>
+              </Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
+                <Box style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Box style={{ background: "var(--teal-3)", border: "1px solid var(--teal-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--teal-9)" }} />
+                    <Text size="1" style={{ color: "var(--teal-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>NEW SLAB</Text>
+                  </Box>
+                </Box>
+              </Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {tableRows.map((row, i) => {
+              const oldIsBetter = row.old < row.new;
+              const newIsBetterRow = row.new < row.old;
+              const formatValue = (val: number) => row.isPercent ? `${val.toFixed(2)}%` : npr(val);
+              return (
+                <Table.Row
+                  key={i}
+                  style={{
+                    borderTop: "1px solid var(--gray-a3)",
+                    background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)",
+                  }}
+                >
+                  <Table.Cell style={{ padding: "14px 20px", color: "var(--gray-11)", fontWeight: 500, fontSize: 14 }}>
+                    {row.label}
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
+                    <Box
+                      style={{
+                        display: "inline-block",
+                        background: oldIsBetter ? "var(--indigo-2)" : "var(--gray-2)",
+                        border: `1px solid ${oldIsBetter ? "var(--indigo-a4)" : "var(--gray-a3)"}`,
+                        borderRadius: "var(--radius-2)",
+                        padding: "3px 10px",
+                        color: "var(--indigo-11)",
+                        fontWeight: 600,
+                        fontSize: 14,
+                      }}
+                    >
+                      {formatValue(row.old)}
+                    </Box>
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
+                    <Box
+                      style={{
+                        display: "inline-block",
+                        background: newIsBetterRow ? "var(--teal-2)" : "var(--gray-2)",
+                        border: `1px solid ${newIsBetterRow ? "var(--teal-a4)" : "var(--gray-a3)"}`,
+                        borderRadius: "var(--radius-2)",
+                        padding: "3px 10px",
+                        color: "var(--teal-11)",
+                        fontWeight: 600,
+                        fontSize: 14,
+                      }}
+                    >
+                      {formatValue(row.new)}
+                    </Box>
+                  </Table.Cell>
+                </Table.Row>
+              );
+            })}
+          </Table.Body>
+        </Table.Root>
+      </Box>
+
+      {/* No taxable income message */}
+      {!hasTaxableIncome && (
+        <Box className="elegant-card" p="6" style={{ textAlign: "center" }}>
+          <Text size="2" color="gray" as="div" style={{ lineHeight: 1.5 }}>
+            Your deductions cover your entire income. No slab breakdown to display.
+          </Text>
+          <Text size="2" color="gray" as="div" mt="1" style={{ lineHeight: 1.5 }}>
+            For any mistake, recheck the salary amounts you entered.
+          </Text>
+        </Box>
+      )}
+
+      {/* Regime View Cards */}
+      {hasTaxableIncome && (
+        <Grid columns={{ initial: "1", lg: "2" }} gap="4">
+          <RegimeView
+            result={oldResult}
+            color="indigo"
+            best={oldIsBetter}
+            info={{
+              title: `Old Slab — ${
+                input.taxpayerType === "couple" ? "Couple" : "Individual"
+              }`,
+              desc: "Separate brackets for individuals and couples. First slab is 1% Social Security Tax (0% with SSF).",
+              slabs: oldSlabsInfo,
+            }}
+          />
+          <RegimeView
+            result={newResult}
+            color="teal"
+            best={newIsBetter}
+            info={{
+              title: "New Slab — Individual & Couple",
+              desc: "Same brackets for all taxpayers. First slab is 1% Social Security Tax (0% with SSF).",
+              slabs: newSlabsInfo,
+            }}
+          />
+        </Grid>
+      )}
+
+      {/* Back button - mobile only */}
+      {!isDesktop && onBack && (
+        <Button size="4" radius="large" onClick={onBack} style={{ width: "100%" }}>
+          <Flex align="center" gap="2">
+            <ArrowLeftIcon width="16" height="16" />
+            Back to Entry
+          </Flex>
+        </Button>
+      )}
+    </Flex>
+  );
+}
