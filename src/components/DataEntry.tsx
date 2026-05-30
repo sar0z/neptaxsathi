@@ -57,12 +57,14 @@ function MoneyRow({
   onChange,
   disabled = false,
   onCalculator,
+  suffix,
 }: {
   label: string;
   value: number;
   onChange: (n: number) => void;
   disabled?: boolean;
   onCalculator?: () => void;
+  suffix?: string;
 }) {
   return (
     <label>
@@ -70,45 +72,52 @@ function MoneyRow({
         <Text size="2" color="gray" style={{ opacity: disabled ? 0.5 : 1 }}>
           {label}
         </Text>
-        <Box style={{ width: 200, flexShrink: 0 }}>
-          <TextField.Root
-            type="text"
-            inputMode="decimal"
-            pattern="[0-9]*"
-            min={0}
-            value={formatNumberWithCommas(value)}
-            size="3"
-            radius="large"
-            placeholder="0"
-            onChange={(e) => onChange(parseFormattedNumber(e.target.value))}
-            style={{ textAlign: "right" }}
-            className="tnum"
-            disabled={disabled}
-          >
-            <TextField.Slot>
-              <Text size="1" color="gray">
-                ₨
-              </Text>
-            </TextField.Slot>
-            {onCalculator && (
-              <TextField.Slot side="right">
-                <Box
-                  onClick={disabled ? undefined : onCalculator}
-                  style={{
-                    cursor: disabled ? "not-allowed" : "pointer",
-                    opacity: disabled ? 0.3 : 0.6,
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "2px 4px",
-                    borderRadius: "var(--radius-1)",
-                  }}
-                >
-                  <CalcIcon />
-                </Box>
+        <Flex align="center" gap="2" style={{ flexShrink: 0 }}>
+          <Box style={{ width: 200 }}>
+            <TextField.Root
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*"
+              min={0}
+              value={formatNumberWithCommas(value)}
+              size="3"
+              radius="large"
+              placeholder="0"
+              onChange={(e) => onChange(parseFormattedNumber(e.target.value))}
+              style={{ textAlign: "right" }}
+              className="tnum"
+              disabled={disabled}
+            >
+              <TextField.Slot>
+                <Text size="1" color="gray">
+                  ₨
+                </Text>
               </TextField.Slot>
-            )}
-          </TextField.Root>
-        </Box>
+              {onCalculator && (
+                <TextField.Slot side="right">
+                  <Box
+                    onClick={disabled ? undefined : onCalculator}
+                    style={{
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      opacity: disabled ? 0.3 : 0.6,
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "2px 4px",
+                      borderRadius: "var(--radius-1)",
+                    }}
+                  >
+                    <CalcIcon />
+                  </Box>
+                </TextField.Slot>
+              )}
+            </TextField.Root>
+          </Box>
+          {suffix && (
+            <Text size="1" color="gray" style={{ opacity: disabled ? 0.5 : 0.7, whiteSpace: "nowrap" }}>
+              {suffix}
+            </Text>
+          )}
+        </Flex>
       </Flex>
     </label>
   );
@@ -327,9 +336,9 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
               </Flex>
             </label>
 
-            <MoneyRow label="Bonus" value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} />
-            <MoneyRow label="Allowance" value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} />
-            <MoneyRow label="Other income" value={input.income.otherIncome} onChange={(v) => setIncome("otherIncome", v)} onCalculator={() => openCalculator('income', 'otherIncome')} />
+            <MoneyRow label="Bonus" value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} suffix="per year" />
+            <MoneyRow label="Allowance" value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} suffix="per year" />
+            <MoneyRow label="Other income" value={input.income.otherIncome} onChange={(v) => setIncome("otherIncome", v)} onCalculator={() => openCalculator('income', 'otherIncome')} suffix="per year" />
           </Flex>
         </Box>
       </Flex>
@@ -381,11 +390,11 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
               </label>
             </Flex>
 
-            <MoneyRow label="SSF" value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} />
-            <MoneyRow label="Provident Fund" value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} />
-            <MoneyRow label="CIT" value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} />
-            <MoneyRow label="Life Insurance" value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} />
-            <MoneyRow label="Donations" value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} />
+            <MoneyRow label="SSF" value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} suffix="per year" />
+            <MoneyRow label="Provident Fund" value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix="per year" />
+            <MoneyRow label="CIT" value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix="per year" />
+            <MoneyRow label="Life Insurance" value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix="per year" />
+            <MoneyRow label="Donations" value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix="per year" />
           </Flex>
         </Box>
       </Flex>
