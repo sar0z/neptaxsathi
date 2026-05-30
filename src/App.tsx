@@ -6,6 +6,7 @@ import { useIsDesktop } from "./hooks/useIsDesktop";
 import DataEntry from "./components/DataEntry";
 import Calculation from "./components/Calculation";
 import Information from "./components/Information";
+import DeveloperInfo from "./components/DeveloperInfo";
 import { EditIcon, ChartIcon, InfoIcon, AppLogoIcon } from "./components/icons";
 
 declare global {
@@ -387,6 +388,9 @@ export default function App() {
                     </Text>
                   </Flex>
                 </Box>
+
+                {/* Developer Info */}
+                <DeveloperInfo />
 
               </Flex>
             </Box>

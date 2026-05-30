@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Flex, Box, Button, Text, Dialog } from "@radix-ui/themes";
+import { evaluateExpression } from "../utils/math";
 
 interface CalculatorProps {
   open: boolean;
@@ -40,8 +41,7 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
         // Evaluate the running expression before chaining
         try {
           const fullExpression = expression + prev;
-          const parsed = fullExpression.replace(/×/g, "*").replace(/÷/g, "/");
-          const result = eval(parsed);
+          const result = evaluateExpression(fullExpression);
           if (result === Infinity || isNaN(result)) {
             setExpression("");
             return "Error";
@@ -75,10 +75,7 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
     try {
       if (!expression) return;
       const fullExpression = expression + display;
-      const parsedExpression = fullExpression
-        .replace(/×/g, "*")
-        .replace(/÷/g, "/");
-      const result = eval(parsedExpression);
+      const result = evaluateExpression(fullExpression);
       
       if (result === Infinity || isNaN(result)) {
         setDisplay("Error");

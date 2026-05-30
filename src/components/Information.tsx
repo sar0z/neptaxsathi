@@ -1,4 +1,5 @@
 import { Flex, Text, Box, Badge } from "@radix-ui/themes";
+import DeveloperInfo from "./DeveloperInfo";
 
 type SlabRow = [string, string, string]; // [from, to, rate]
 
@@ -129,6 +130,7 @@ export default function Information() {
         </Box>
       </Flex>
 
+      <DeveloperInfo />
     </Flex>
   );
 }
