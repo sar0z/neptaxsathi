@@ -6,6 +6,7 @@ import { calculateRegime, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import RegimeView from "./RegimeView";
 import { useIsDesktop } from "../hooks/useIsDesktop";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface Props {
   input: TaxInput;
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export default function Calculation({ input, onBack }: Props) {
+  const { t, language } = useTranslation();
+  const currency = t('currency');
   const isDesktop = useIsDesktop();
   const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
   const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
@@ -29,38 +32,38 @@ export default function Calculation({ input, onBack }: Props) {
   const oldSlabsInfo: [string, string][] =
     input.taxpayerType === "couple"
       ? [
-          ["Up to 6,00,000", "1% (0% SSF)"],
+          [`${t('upTo')} 6,00,000`, "1% (0% SSF)"],
           ["6L – 8L", "10%"],
           ["8L – 11L", "20%"],
           ["11L – 20L", "30%"],
           ["20L – 50L", "36%"],
-          ["Above 50L", "39%"],
+          [`${t('above')} 50L`, "39%"],
         ]
       : [
-          ["Up to 5,00,000", "1% (0% SSF)"],
+          [`${t('upTo')} 5,00,000`, "1% (0% SSF)"],
           ["5L – 7L", "10%"],
           ["7L – 10L", "20%"],
           ["10L – 20L", "30%"],
           ["20L – 50L", "36%"],
-          ["Above 50L", "39%"],
+          [`${t('above')} 50L`, "39%"],
         ];
 
   const newSlabsInfo: [string, string][] = [
-    ["Up to 10,00,000", "1% (0% SSF)"],
+    [`${t('upTo')} 10,00,000`, "1% (0% SSF)"],
     ["10L – 15L", "10%"],
     ["15L – 25L", "20%"],
     ["25L – 40L", "27%"],
-    ["Above 40L", "29%"],
+    [`${t('above')} 40L`, "29%"],
   ];
 
   const tableRows = [
-    { label: "Income Tax (Yearly)", old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
-    { label: "Income Tax (Monthly)", old: oldResult.totalTaxMonthly, new: newResult.totalTaxMonthly },
-    { label: "Effective Rate", old: oldResult.effectiveRate * 100, new: newResult.effectiveRate * 100, isPercent: true },
-    { label: "Net Income (Yearly)", old: oldResult.netIncomeYearly, new: newResult.netIncomeYearly },
-    { label: "Net Income (Monthly)", old: oldResult.netIncomeMonthly, new: newResult.netIncomeMonthly },
-    { label: "Cash in Hand (Yearly)", old: input.income.salary - oldResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit), new: input.income.salary - newResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit) },
-    { label: "Cash in Hand (Monthly)", old: (input.income.salary / input.months) - oldResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months), new: (input.income.salary / input.months) - newResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months) },
+    { label: `${t('incomeTax')} (${t('yearly')})`, old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
+    { label: `${t('incomeTax')} (${t('monthly')})`, old: oldResult.totalTaxMonthly, new: newResult.totalTaxMonthly },
+    { label: t('effectiveRate'), old: oldResult.effectiveRate * 100, new: newResult.effectiveRate * 100, isPercent: true },
+    { label: `${t('netSalary')} (${t('yearly')})`, old: oldResult.netIncomeYearly, new: newResult.netIncomeYearly },
+    { label: `${t('netSalary')} (${t('monthly')})`, old: oldResult.netIncomeMonthly, new: newResult.netIncomeMonthly },
+    { label: `${t('cashInHand')} (${t('yearly')})`, old: input.income.salary - oldResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit), new: input.income.salary - newResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit) },
+    { label: `${t('cashInHand')} (${t('monthly')})`, old: (input.income.salary / input.months) - oldResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months), new: (input.income.salary / input.months) - newResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months) },
   ];
 
   return (
@@ -81,10 +84,10 @@ export default function Calculation({ input, onBack }: Props) {
         {neutral ? (
           <Box style={{ textAlign: "center" }}>
             <Text size="3" weight="bold" as="div" mb="2" style={{ color: "var(--gray-11)" }}>
-              No Savings Difference
+              {t('noSavingsDifference')}
             </Text>
             <Text size="2" color="gray" as="div" style={{ lineHeight: 1.5 }}>
-              Both regimes result in the same tax amount. But hey, at least you're consistent! 🎯
+              {t('noSavingsMessage')}
             </Text>
           </Box>
         ) : (
@@ -113,7 +116,7 @@ export default function Calculation({ input, onBack }: Props) {
                   letterSpacing: "0.08em",
                 }}
               >
-                {newIsBetter ? "New slab" : "Old slab"} saves you
+                {t(newIsBetter ? 'newSlabSaves' : 'oldSlabSaves', { slab: t(newIsBetter ? 'newSlabLabel' : 'oldSlabLabel') })}
               </Text>
             </Flex>
 
@@ -126,10 +129,10 @@ export default function Calculation({ input, onBack }: Props) {
                   className="tnum"
                   style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
                 >
-                  {npr(Math.abs(savingsYearly))}
+                  {npr(Math.abs(savingsYearly), language, currency)}
                 </Heading>
                 <Text size="1" color="gray" as="div" mt="1">
-                  per year
+                  {t('perYear')}
                 </Text>
               </Box>
               <Box>
@@ -140,10 +143,10 @@ export default function Calculation({ input, onBack }: Props) {
                   className="tnum"
                   style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
                 >
-                  {npr(Math.abs(savingsMonthly))}
+                  {npr(Math.abs(savingsMonthly), language, currency)}
                 </Heading>
                 <Text size="1" color="gray" as="div" mt="1">
-                  per month
+                  {t('perMonth')}
                 </Text>
               </Box>
             </Flex>
@@ -180,7 +183,7 @@ export default function Calculation({ input, onBack }: Props) {
           />
           <Flex align="center" justify="between" mb="2">
             <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-              Gross Salary
+              {t('grossSalary')}
             </Text>
             <Box
               style={{
@@ -199,7 +202,7 @@ export default function Calculation({ input, onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
-            {npr(oldResult.totalIncome)}
+            {npr(oldResult.totalIncome, language, currency)}
           </Text>
         </Box>
 
@@ -230,7 +233,7 @@ export default function Calculation({ input, onBack }: Props) {
           />
           <Flex align="center" justify="between" mb="2">
             <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-              Allowances + Bonus
+              {t('allowancesBonus')}
             </Text>
             <Box
               style={{
@@ -250,7 +253,7 @@ export default function Calculation({ input, onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
-            {npr(oldResult.totalIncome - input.income.salary)}
+            {npr(oldResult.totalIncome - input.income.salary, language, currency)}
           </Text>
         </Box>
 
@@ -281,7 +284,7 @@ export default function Calculation({ input, onBack }: Props) {
           />
           <Flex align="center" justify="between" mb="2">
             <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-              Deductions
+              {t('deductionsLabel')}
             </Text>
             <Box
               style={{
@@ -300,7 +303,7 @@ export default function Calculation({ input, onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--red-11)", lineHeight: 1 }}>
-            −{npr(oldResult.totalDeductions)}
+            −{npr(oldResult.totalDeductions, language, currency)}
           </Text>
         </Box>
 
@@ -331,7 +334,7 @@ export default function Calculation({ input, onBack }: Props) {
           />
           <Flex align="center" justify="between" mb="2">
             <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-              Net Salary
+              {t('netSalary')}
             </Text>
             <Box
               style={{
@@ -350,7 +353,7 @@ export default function Calculation({ input, onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
-            {npr(oldResult.netIncomeYearly)}
+            {npr(oldResult.netIncomeYearly, language, currency)}
           </Text>
         </Box>
 
@@ -381,7 +384,7 @@ export default function Calculation({ input, onBack }: Props) {
           />
           <Flex align="center" justify="between" mb="2">
             <Text size="1" style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--indigo-11)" }}>
-              Taxable Salary
+              {t('taxableSalary')}
             </Text>
             <Box
               style={{
@@ -402,7 +405,7 @@ export default function Calculation({ input, onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--indigo-12)", lineHeight: 1 }}>
-            {npr(oldResult.taxableIncome)}
+            {npr(oldResult.taxableIncome, language, currency)}
           </Text>
         </Box>
       </Grid>
@@ -420,13 +423,13 @@ export default function Calculation({ input, onBack }: Props) {
           <Table.Header>
             <Table.Row style={{ background: "var(--gray-3)" }}>
               <Table.ColumnHeaderCell style={{ color: "var(--gray-11)", fontWeight: 600, padding: "12px 20px", fontSize: 11, letterSpacing: "0.06em", width: "40%" }}>
-                ITEM
+                {t('incomeTax').split(' ')[0]}
               </Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
                 <Box style={{ display: "flex", justifyContent: "flex-end" }}>
                   <Box style={{ background: "var(--indigo-3)", border: "1px solid var(--indigo-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--indigo-9)" }} />
-                    <Text size="1" style={{ color: "var(--indigo-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>OLD SLAB</Text>
+                    <Text size="1" style={{ color: "var(--indigo-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{t('oldSlab')}</Text>
                   </Box>
                 </Box>
               </Table.ColumnHeaderCell>
@@ -434,7 +437,7 @@ export default function Calculation({ input, onBack }: Props) {
                 <Box style={{ display: "flex", justifyContent: "flex-end" }}>
                   <Box style={{ background: "var(--teal-3)", border: "1px solid var(--teal-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--teal-9)" }} />
-                    <Text size="1" style={{ color: "var(--teal-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>NEW SLAB</Text>
+                    <Text size="1" style={{ color: "var(--teal-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{t('newSlab')}</Text>
                   </Box>
                 </Box>
               </Table.ColumnHeaderCell>
@@ -444,7 +447,18 @@ export default function Calculation({ input, onBack }: Props) {
             {tableRows.map((row, i) => {
               const oldIsBetter = row.old < row.new;
               const newIsBetterRow = row.new < row.old;
-              const formatValue = (val: number) => row.isPercent ? `${val.toFixed(2)}%` : npr(val);
+              const formatValue = (val: number) => {
+                if (row.isPercent) {
+                  const percentValue = val.toFixed(2);
+                  if (language === 'ne') {
+                    const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+                    const converted = percentValue.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+                    return `${converted}%`;
+                  }
+                  return `${percentValue}%`;
+                }
+                return npr(val, language, currency);
+              };
               return (
                 <Table.Row
                   key={i}
@@ -499,10 +513,10 @@ export default function Calculation({ input, onBack }: Props) {
       {!hasTaxableIncome && (
         <Box className="elegant-card" p="6" style={{ textAlign: "center" }}>
           <Text size="2" color="gray" as="div" style={{ lineHeight: 1.5 }}>
-            Your deductions cover your entire income. No slab breakdown to display.
+            {t('deductionsCoverIncome')}
           </Text>
           <Text size="2" color="gray" as="div" mt="1" style={{ lineHeight: 1.5 }}>
-            For any mistake, recheck the salary amounts you entered.
+            {t('recheckSalary')}
           </Text>
         </Box>
       )}
@@ -515,10 +529,8 @@ export default function Calculation({ input, onBack }: Props) {
             color="indigo"
             best={oldIsBetter}
             info={{
-              title: `Old Slab — ${
-                input.taxpayerType === "couple" ? "Couple" : "Individual"
-              }`,
-              desc: "Separate brackets for individuals and couples. First slab is 1% Social Security Tax (0% with SSF).",
+              title: input.taxpayerType === "couple" ? t('oldSlabCouple') : t('oldSlabIndividual'),
+              desc: t('oldSlabDesc'),
               slabs: oldSlabsInfo,
             }}
           />
@@ -527,8 +539,8 @@ export default function Calculation({ input, onBack }: Props) {
             color="teal"
             best={newIsBetter}
             info={{
-              title: "New Slab — Individual & Couple",
-              desc: "Same brackets for all taxpayers. First slab is 1% Social Security Tax (0% with SSF).",
+              title: t('newSlabAll'),
+              desc: t('newSlabDesc'),
               slabs: newSlabsInfo,
             }}
           />
@@ -540,7 +552,7 @@ export default function Calculation({ input, onBack }: Props) {
         <Button size="4" radius="large" onClick={onBack} style={{ width: "100%" }}>
           <Flex align="center" gap="2">
             <ArrowLeftIcon width="16" height="16" />
-            Back to Entry
+            {t('backToEntry')}
           </Flex>
         </Button>
       )}

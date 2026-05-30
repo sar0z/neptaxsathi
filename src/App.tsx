@@ -1,8 +1,64 @@
 import { useState, useEffect } from "react";
-import { Flex, Box, Heading, Text, Container, Dialog, Button, Separator } from "@radix-ui/themes";
+import { Flex, Box, Heading, Text, Container, Dialog, Button, Separator, DropdownMenu } from "@radix-ui/themes";
+
+// SVG Flag Components
+const USFlag = () => (
+<svg xmlns="http://www.w3.org/2000/svg" id="flag-icons-us" viewBox="0 0 640 480">
+  <path fill="#bd3d44" d="M0 0h640v480H0"/>
+  <path stroke="#fff" stroke-width="37" d="M0 55.3h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640"/>
+  <path fill="#192f5d" d="M0 0h364.8v258.5H0"/>
+  <marker id="us-a" markerHeight="30" markerWidth="30">
+    <path fill="#fff" d="m14 0 9 27L0 10h28L5 27z"/>
+  </marker>
+  <path fill="none" marker-mid="url(#us-a)" d="m0 0 16 11h61 61 61 61 60L47 37h61 61 60 61L16 63h61 61 61 61 60L47 89h61 61 60 61L16 115h61 61 61 61 60L47 141h61 61 60 61L16 166h61 61 61 61 60L47 192h61 61 60 61L16 218h61 61 61 61 60z"/>
+</svg>
+
+
+);
+
+const NepalFlag = () => (
+<svg xmlns="http://www.w3.org/2000/svg" id="flag-icons-np" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="np-b">
+      <path fill-opacity=".7" d="M0-16h512v512H0z"/>
+    </clipPath>
+    <clipPath id="np-a">
+      <path fill-opacity=".7" d="M0 0h512v512H0z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#np-a)">
+    <g clip-path="url(#np-b)" transform="translate(0 16)">
+      <g fill-rule="evenodd">
+        <path fill="#ce0000" stroke="#000063" stroke-width="13" d="M6.5 489.5h378.8L137.4 238.1l257.3.3L6.6-9.5v499z"/>
+        <path fill="#fff" d="m180.7 355.8-27 9 21.2 19.8-28.5-1.8 11.7 26.2-25.5-12.3.5 28.6-18.8-20.9-10.7 26.6-9.2-26.3-20.3 20.6 1.8-27.7L49 409l12.6-25-29.3.6 21.5-18.3-27.3-10.5 27-9L32.2 327l28.4 1.8L49 302.6l25.6 12.3-.5-28.6 18.8 20.9 10.7-26.6 9.1 26.3 20.4-20.6-1.9 27.7 27-11.4-12.7 25 29.4-.6-21.5 18.3zm-32.4-184.7-11.3 8.4 5.6 4.6a94 94 0 0 0 30.7-36c1.8 21.3-17.7 69-68.7 69.5a70.6 70.6 0 0 1-71.5-70.3c10 18.2 16.2 27 32 36.5l4.7-4.4-10.6-8.9 13.7-3.6-7.4-12.4 14.4 1-1.8-14.4 12.6 7.4 4-13.5 9 10.8 8.5-10.3 4.6 14 11.8-8.2-1.5 14.3 14.2-1.7-6.7 13.2z"/>
+      </g>
+    </g>
+  </g>
+</svg>
+);
+
+const CircularFlag = ({ lang }: { lang: 'en' | 'ne' }) => (
+  <Box
+    style={{
+      width: 18,
+      height: 18,
+      overflow: "hidden",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "var(--gray-2)",
+      flexShrink: 0,
+    }}
+  >
+    <Box style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", transform: lang === 'en' ? 'scale(1.4)' : 'scale(1.1)' }}>
+      {lang === 'en' ? <USFlag /> : <NepalFlag />}
+    </Box>
+  </Box>
+);
 import type { TaxInput } from "./engine/types";
 import { useIsDesktop } from "./hooks/useIsDesktop";
 import { supabase } from "./lib/supabase";
+import { useTranslation } from "./i18n/LanguageContext";
 
 import DataEntry from "./components/DataEntry";
 import Calculation from "./components/Calculation";
@@ -39,13 +95,14 @@ const DEFAULT_INPUT: TaxInput = {
 const TABS = ["entry", "calc", "info"] as const;
 type TabKey = (typeof TABS)[number];
 
-const NAV = [
-  { key: "entry" as const, label: "Entry", Icon: EditIcon },
-  { key: "calc" as const, label: "Results", Icon: ChartIcon },
-  { key: "info" as const, label: "Info", Icon: InfoIcon },
-];
-
 export default function App() {
+  const { language, setLanguage, t } = useTranslation();
+
+  const NAV = [
+    { key: "entry" as const, label: t('navEntry'), Icon: EditIcon },
+    { key: "calc" as const, label: t('navResults'), Icon: ChartIcon },
+    { key: "info" as const, label: t('navInfo'), Icon: InfoIcon },
+  ];
   const [input, setInput] = useState<TaxInput>(DEFAULT_INPUT);
   const [tab, setTab] = useState<TabKey>("entry");
   const [infoOpen, setInfoOpen] = useState(false);
@@ -191,33 +248,70 @@ export default function App() {
             </Box>
             <Box style={{ lineHeight: 1.25 }}>
               <Heading size="4" as="h1" weight="bold">
-                Nepal Tax Calculator
+                {t('appTitle')}
               </Heading>
               <Text size="1" color="gray">
-                FY {input.fiscalYear} · Old vs New Slab
+                {t('appSubtitle', { fiscalYear: input.fiscalYear })}
               </Text>
             </Box>
           </Flex>
-          <Button
-            variant="ghost"
-            color="gray"
-            size="3"
-            onClick={() => setAppInfoOpen(true)}
-            style={{
-              cursor: "pointer",
-              borderRadius: "50%",
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-            }}
-          >
-            <Box style={{ width: 20, height: 20 }}>
-              <InfoIcon />
-            </Box>
-          </Button>
+          <Flex align="center" gap="5">
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button
+                  variant="ghost"
+                  color="gray"
+                  size="2"
+                  style={{
+                    cursor: "pointer",
+                    borderRadius: "50%",
+                    width: 36,
+                    height: 36,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CircularFlag lang={language} />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end" size="2">
+                <DropdownMenu.Item onClick={() => setLanguage('en')} style={{ cursor: "pointer" }}>
+                  <Flex align="center" gap="2" style={{ width: "100%" }}>
+                    <CircularFlag lang="en" />
+                    <Text>English</Text>
+                  </Flex>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => setLanguage('ne')} style={{ cursor: "pointer" }}>
+                  <Flex align="center" gap="2" style={{ width: "100%" }}>
+                    <CircularFlag lang="ne" />
+                    <Text>नेपाली</Text>
+                  </Flex>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+            <Button
+              variant="ghost"
+              color="gray"
+              size="3"
+              onClick={() => setAppInfoOpen(true)}
+              style={{
+                cursor: "pointer",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+              }}
+            >
+              <Box style={{ width: 20, height: 20 }}>
+                <InfoIcon />
+              </Box>
+            </Button>
+          </Flex>
         </Flex>
       </Box>
 
@@ -243,11 +337,10 @@ export default function App() {
             <Container size="3" px="6" py="6">
               <Box mb="5">
                 <Heading size="6" as="h2">
-                  Calculation Results
+                  {t('calculationResults')}
                 </Heading>
                 <Text size="2" color="gray" as="div" mt="1">
-                  Side-by-side comparison · hover the ⓘ on each card for slab
-                  details.
+                  {t('resultsSubtitle')}
                 </Text>
               </Box>
               <Calculation input={input} />
@@ -330,7 +423,7 @@ export default function App() {
             <Box style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--indigo-10)" }}>
               <InfoIcon />
             </Box>
-            <Text size="2" weight="medium">Tax Slabs</Text>
+            <Text size="2" weight="medium">{t('taxSlabs')}</Text>
           </Button>
         </Box>
       )}
@@ -359,7 +452,7 @@ export default function App() {
               <Flex align="center" justify="between">
                 <Flex align="center" gap="2">
                   <Box style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--indigo-9)" }} />
-                  <Text size="3" weight="bold">Tax Slabs · FY 2082/83</Text>
+                  <Text size="3" weight="bold">{t('taxSlabs')} · {t('fy')} {t('oldFiscalYear')}</Text>
                 </Flex>
                 <Dialog.Close>
                   <Button variant="ghost" color="gray" size="2" style={{ borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}>
@@ -400,7 +493,7 @@ export default function App() {
                       <AppLogoIcon />
                     </Box>
                   </Box>
-                  <Heading size="3" weight="bold">Nepal Tax Calculator</Heading>
+                  <Heading size="3" weight="bold">{t('appInfoTitle')}</Heading>
                 </Flex>
                 <Dialog.Close>
                   <Button variant="ghost" color="gray" size="2" style={{ borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}>
@@ -416,38 +509,36 @@ export default function App() {
 
                 {/* About */}
                 <Box>
-                  <Text size="2" weight="bold" style={{ color: "var(--gray-12)" }}>What is this app?</Text>
-                  <Text size="2" color="gray" style={{ lineHeight: 1.6, marginTop: 4, display: "block" }}>
-                    Nepal Tax Calculator helps salaried employees instantly compare their tax liability under the <strong style={{ color: "var(--indigo-11)" }}>Old Slab (FY 2082/83)</strong> vs the newly proposed <strong style={{ color: "var(--teal-11)" }}>New Slab (FY 2083/84)</strong> — so you can clearly see which regime benefits you more.
-                  </Text>
+                  <Text size="2" weight="bold" style={{ color: "var(--gray-12)" }}>{t('whatIsThisApp')}</Text>
+                  <Text size="2" color="gray" style={{ lineHeight: 1.6, marginTop: 4, display: "block" }} dangerouslySetInnerHTML={{ __html: t('appDescription', { oldFiscalYear: t('oldFiscalYear'), newFiscalYear: t('newFiscalYear') }) }} />
                 </Box>
 
                 {/* Comparison highlight */}
                 <Box style={{ background: "linear-gradient(135deg, var(--indigo-2), var(--teal-2))", padding: "14px 16px", borderRadius: "var(--radius-3)", border: "1px solid var(--indigo-a3)" }}>
-                  <Text size="1" weight="bold" style={{ textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--indigo-11)", display: "block", marginBottom: 10 }}>Side-by-Side Comparison</Text>
+                  <Text size="1" weight="bold" style={{ textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--indigo-11)", display: "block", marginBottom: 10 }}>{t('sideBySideComparison')}</Text>
                   <Flex direction="column" gap="2">
                     <Flex align="start" gap="2">
                       <Text size="2" style={{ color: "var(--indigo-10)", fontWeight: "bold", lineHeight: 1 }}>↔</Text>
                       <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>Old vs New Tax:</Text> See your income tax, effective rate, net income, and cash in hand for both regimes in one table.
+                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>{t('oldVsNewTax').split(':')[0]}:</Text> {t('oldVsNewTax').split(':')[1]}
                       </Text>
                     </Flex>
                     <Flex align="start" gap="2">
                       <Text size="2" style={{ color: "var(--indigo-10)", fontWeight: "bold", lineHeight: 1 }}>↔</Text>
                       <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>SSF Benefit:</Text> Contributing to SSF waives the 1% first-slab social security tax entirely.
+                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>{t('ssfBenefit').split(':')[0]}:</Text> {t('ssfBenefit').split(':')[1]}
                       </Text>
                     </Flex>
                     <Flex align="start" gap="2">
                       <Text size="2" style={{ color: "var(--indigo-10)", fontWeight: "bold", lineHeight: 1 }}>↔</Text>
                       <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>Deduction Caps:</Text> SSF up to ₨ 5,00,000 · CIT/PF up to ₨ 3,00,000 · Insurance up to ₨ 40,000.
+                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>{t('deductionCaps').split(':')[0]}:</Text> {t('deductionCaps').split(':')[1]}
                       </Text>
                     </Flex>
                     <Flex align="start" gap="2">
                       <Text size="2" style={{ color: "var(--indigo-10)", fontWeight: "bold", lineHeight: 1 }}>↔</Text>
                       <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>Individual & Couple:</Text> Slab thresholds automatically adjust based on taxpayer type.
+                        <Text weight="bold" style={{ color: "var(--gray-11)" }}>{t('individualCouple').split(':')[0]}:</Text> {t('individualCouple').split(':')[1]}
                       </Text>
                     </Flex>
                   </Flex>
@@ -462,17 +553,17 @@ export default function App() {
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                       <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
-                    <Text size="1" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.06em" }}>Privacy & Disclaimer</Text>
+                    <Text size="1" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.06em" }}>{t('privacyDisclaimer')}</Text>
                   </Flex>
                   <Flex direction="column" gap="2">
                     <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                      <strong style={{ color: "var(--gray-11)" }}>No data is stored or transmitted.</strong> All calculations run entirely in your browser. We do not collect, store, or share any of your financial information.
+                      {t('noDataStored')}
                     </Text>
                     <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                      This tool is for <strong style={{ color: "var(--gray-11)" }}>informational purposes only</strong> and does not constitute professional tax or financial advice. Tax laws are subject to change — consult a certified tax professional for filing.
+                      {t('informationalOnly')}
                     </Text>
                     <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>
-                      Figures are based on the proposed FY 2083/84 (new slab) and FY 2082/83 (old slab) and may not reflect final legislation.
+                      {t('figuresBasedOn', { oldFiscalYear: t('oldFiscalYear'), newFiscalYear: t('newFiscalYear') })}
                     </Text>
                   </Flex>
                 </Box>
@@ -492,7 +583,7 @@ export default function App() {
                   style={{ width: "100%", borderRadius: "var(--radius-3)", minHeight: 48, fontWeight: 600 }}
                   onClick={() => { setAppInfoOpen(false); window.umami?.track("info-dialog-closed"); }}
                 >
-                  Got it, let me calculate
+                  {t('gotIt')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -501,7 +592,7 @@ export default function App() {
                   style={{ width: "100%", borderRadius: "var(--radius-3)", minHeight: 40, color: "var(--gray-10)", fontSize: 12 }}
                   onClick={handleAppInfoNeverShow}
                 >
-                  Don't show this again
+                  {t('neverShowAgain')}
                 </Button>
               </Flex>
             </Box>

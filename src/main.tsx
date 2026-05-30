@@ -3,16 +3,19 @@ import { createRoot } from "react-dom/client";
 import { Theme } from "@radix-ui/themes";
 import "./index.css";
 import App from "./App";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Theme
-      accentColor="indigo"
-      grayColor="slate"
-      radius="medium"
-      scaling="100%"
-    >
-      <App />
-    </Theme>
+    <LanguageProvider>
+      <Theme
+        accentColor="indigo"
+        grayColor="slate"
+        radius="medium"
+        scaling="100%"
+      >
+        <App />
+      </Theme>
+    </LanguageProvider>
   </StrictMode>
 );

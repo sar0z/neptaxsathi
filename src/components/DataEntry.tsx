@@ -11,6 +11,7 @@ import { PersonIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
 import type { TaxInput } from "../engine/types";
 import { useIsDesktop } from "../hooks/useIsDesktop";
+import { useTranslation } from "../i18n/LanguageContext";
 import Calculator from "./Calculator";
 
 interface Props {
@@ -32,15 +33,30 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function formatNumberWithCommas(value: number): string {
+function convertToDevanagari(numStr: string): string {
+  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  return numStr.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+}
+
+function formatNumberWithCommas(value: number, language: string = 'en'): string {
   if (value === 0) return "";
-  return value.toLocaleString("en-IN");
+  const formatted = value.toLocaleString("en-IN");
+  if (language === 'ne') {
+    return convertToDevanagari(formatted);
+  }
+  return formatted;
 }
 
 function parseFormattedNumber(value: string): number {
   if (!value) return 0;
+  // Convert Devanagari digits to Western digits
+  const devanagariToWestern: Record<string, string> = {
+    '०': '0', '१': '1', '२': '2', '३': '3', '४': '4',
+    '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'
+  };
+  const westernValue = value.replace(/[०१२३४५६७८९]/g, (digit) => devanagariToWestern[digit]);
   // Remove commas and convert to number
-  const parsed = parseInt(value.replace(/,/g, ""), 10);
+  const parsed = parseInt(westernValue.replace(/,/g, ""), 10);
   return isNaN(parsed) ? 0 : parsed;
 }
 
@@ -58,6 +74,8 @@ function MoneyRow({
   disabled = false,
   onCalculator,
   suffix,
+  currency,
+  language,
 }: {
   label: string;
   value: number;
@@ -65,6 +83,8 @@ function MoneyRow({
   disabled?: boolean;
   onCalculator?: () => void;
   suffix?: string;
+  currency?: string;
+  language?: string;
 }) {
   return (
     <label>
@@ -77,9 +97,9 @@ function MoneyRow({
             <TextField.Root
               type="text"
               inputMode="decimal"
-              pattern="[0-9]*"
+              pattern="[0-9०१२३४५६७८९]*"
               min={0}
-              value={formatNumberWithCommas(value)}
+              value={formatNumberWithCommas(value, language)}
               size="3"
               radius="large"
               placeholder="0"
@@ -90,7 +110,7 @@ function MoneyRow({
             >
               <TextField.Slot>
                 <Text size="1" color="gray">
-                  ₨
+                  {currency || '₨'}
                 </Text>
               </TextField.Slot>
               {onCalculator && (
@@ -124,6 +144,7 @@ function MoneyRow({
 }
 
 export default function DataEntry({ input, setInput, onCalculate }: Props) {
+  const { t, language } = useTranslation();
   const setIncome = (k: keyof typeof input.income, v: number) =>
     setInput((p) => ({ ...p, income: { ...p.income, [k]: v } }));
   const setDed = (k: keyof typeof input.deductions, v: number) =>
@@ -173,12 +194,12 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
     <Flex direction="column" gap="5" pb="6" className="content-fade">
       {/* Configuration */}
       <Flex direction="column" gap="3">
-        <SectionLabel>Configuration</SectionLabel>
+        <SectionLabel>{t('taxpayerType')}</SectionLabel>
 
         <Flex gap="3">
           <Box style={{ flex: 1 }}>
             <Text size="1" color="gray" as="div" mb="2">
-              Taxpayer
+              {t('taxpayerType')}
             </Text>
             <Flex gap="2">
               <Box
@@ -196,7 +217,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                 <Flex align="center" gap="2" justify="center">
                   <PersonIcon width="18" height="18" style={{ color: input.taxpayerType === "individual" ? "var(--indigo-11)" : "var(--gray-11)" }} />
                   <Text size="2" weight={input.taxpayerType === "individual" ? "bold" : "medium"} style={{ color: input.taxpayerType === "individual" ? "var(--indigo-11)" : "var(--gray-11)" }}>
-                    Individual
+                    {t('individual')}
                   </Text>
                 </Flex>
               </Box>
@@ -218,7 +239,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                     <PersonIcon width="18" height="18" style={{ color: input.taxpayerType === "couple" ? "var(--indigo-11)" : "var(--gray-11)" }} />
                   </Flex>
                   <Text size="2" weight={input.taxpayerType === "couple" ? "bold" : "medium"} style={{ color: input.taxpayerType === "couple" ? "var(--indigo-11)" : "var(--gray-11)" }}>
-                    Couple
+                    {t('couple')}
                   </Text>
                 </Flex>
               </Box>
@@ -229,7 +250,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
 
       {/* Income */}
       <Flex direction="column" gap="3">
-        <SectionLabel>Income</SectionLabel>
+        <SectionLabel>{t('income')}</SectionLabel>
         <Box
           p="4"
           style={{
@@ -243,15 +264,15 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <label>
               <Flex align="center" justify="between" gap="3">
                 <Text size="2" color="gray">
-                  Monthly Salary
+                  {t('monthlySalary')}
                 </Text>
                 <Box style={{ width: 200, flexShrink: 0 }}>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
-                    pattern="[0-9]*"
+                    pattern="[0-9०१२३४५६७८९]*"
                     min={0}
-                    value={formatNumberWithCommas(monthlySalary)}
+                    value={formatNumberWithCommas(monthlySalary, language)}
                     size="3"
                     radius="large"
                     placeholder="0"
@@ -260,7 +281,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                     className="tnum"
                   >
                     <TextField.Slot>
-                      <Text size="1" color="gray">₨</Text>
+                      <Text size="1" color="gray">{t('currency')}</Text>
                     </TextField.Slot>
                     <TextField.Slot side="right">
                       <Box
@@ -278,7 +299,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             {/* Months */}
             <Flex align="center" justify="between" gap="3">
               <Text size="2" color="gray">
-                Months
+                {t('months')}
               </Text>
               <Box style={{ width: 200, flexShrink: 0 }}>
                 <Select.Root
@@ -290,7 +311,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                   <Select.Content>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <Select.Item key={m} value={m.toString()}>
-                        {m} {m === 12 ? "(Full Year)" : m === 1 ? "month" : "months"}
+                        {language === 'ne' ? convertToDevanagari(m.toString()) : m.toString()} {m === 12 ? `(${t('fullYear')})` : m === 1 ? t('month') : t('months')}
                       </Select.Item>
                     ))}
                   </Select.Content>
@@ -304,15 +325,15 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <label>
               <Flex align="center" justify="between" gap="3">
                 <Text size="2" color="gray">
-                  Yearly Salary
+                  {t('yearlySalary')}
                 </Text>
                 <Box style={{ width: 200, flexShrink: 0 }}>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
-                    pattern="[0-9]*"
+                    pattern="[0-9०१२३४५६७८९]*"
                     min={0}
-                    value={formatNumberWithCommas(input.income.salary)}
+                    value={formatNumberWithCommas(input.income.salary, language)}
                     size="3"
                     radius="large"
                     placeholder="0"
@@ -321,7 +342,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                     className="tnum"
                   >
                     <TextField.Slot>
-                      <Text size="1" color="gray">₨</Text>
+                      <Text size="1" color="gray">{t('currency')}</Text>
                     </TextField.Slot>
                     <TextField.Slot side="right">
                       <Box
@@ -336,16 +357,16 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
               </Flex>
             </label>
 
-            <MoneyRow label="Bonus" value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} suffix="per year" />
-            <MoneyRow label="Allowance" value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} suffix="per year" />
-            <MoneyRow label="Other income" value={input.income.otherIncome} onChange={(v) => setIncome("otherIncome", v)} onCalculator={() => openCalculator('income', 'otherIncome')} suffix="per year" />
+            <MoneyRow label={t('bonus')} value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('allowance')} value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('otherIncome')} value={input.income.otherIncome} onChange={(v) => setIncome("otherIncome", v)} onCalculator={() => openCalculator('income', 'otherIncome')} suffix={t('perYear')} currency={t('currency')} language={language} />
           </Flex>
         </Box>
       </Flex>
 
       {/* Deductions */}
       <Flex direction="column" gap="3">
-        <SectionLabel>Deductions · Annual</SectionLabel>
+        <SectionLabel>{t('deductions')}</SectionLabel>
         <Box
           p="4"
           style={{
@@ -371,10 +392,10 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
               <label>
                 <Box>
                   <Text as="div" size="2" weight="medium">
-                    Contributing to SSF
+                    {t('contributingSSF')}
                   </Text>
                   <Text as="div" size="1" color="gray">
-                    Makes first 1% slab 0%
+                    {t('ssfNote')}
                   </Text>
                 </Box>
                 <Switch
@@ -390,11 +411,11 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
               </label>
             </Flex>
 
-            <MoneyRow label="SSF" value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} suffix="per year" />
-            <MoneyRow label="Provident Fund" value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix="per year" />
-            <MoneyRow label="CIT" value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix="per year" />
-            <MoneyRow label="Life Insurance" value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix="per year" />
-            <MoneyRow label="Donations" value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix="per year" />
+            <MoneyRow label={t('ssf')} value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('providentFund')} value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('donations')} value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix={t('perYear')} currency={t('currency')} language={language} />
           </Flex>
         </Box>
       </Flex>
@@ -402,7 +423,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
       {/* Calculate button - mobile only */}
       {!isDesktop && onCalculate && (
         <Button size="4" radius="large" onClick={onCalculate} style={{ width: "100%" }}>
-          Calculate
+          {t('calculate')}
         </Button>
       )}
 

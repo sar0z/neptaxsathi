@@ -41,6 +41,38 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjRRdLdxI9rZoWj-g9dE6Y8uCJy3Y2KPm1e3r5.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKp1e3r5.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKpVe3r5.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKJle3r5.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body,
 #root {
@@ -234,6 +266,13 @@ input[type="number"] {
 /* Tabular number helper */
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* Nepali font for Devanagari numerals */
+body[data-language="ne"] input[type="text"],
+body[data-language="ne"] input[type="number"],
+body[data-language="ne"] .tnum {
+  font-family: "Noto Sans Devanagari", "Nunito", sans-serif !important;
 }
 
 /* ============================================================

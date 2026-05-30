@@ -1,0 +1,262 @@
+export type Language = 'en' | 'ne';
+
+export const translations = {
+  en: {
+    // App Header
+    appTitle: 'Nepal Tax Calculator',
+    appSubtitle: 'FY {fiscalYear} · Old vs New Slab',
+    
+    // Fiscal Years
+    oldFiscalYear: '2082/83',
+    newFiscalYear: '2083/84',
+    fy: 'FY',
+    
+    // Regime Names
+    oldRegimeName: 'Old Slab (2082/83)',
+    newRegimeName: 'New Slab',
+    
+    // Navigation
+    navEntry: 'Entry',
+    navResults: 'Results',
+    navInfo: 'Info',
+    backToEntry: 'Back to Entry',
+    
+    // Taxpayer Type
+    taxpayerType: 'Taxpayer Type',
+    individual: 'Individual',
+    couple: 'Couple',
+    
+    // Income Section
+    income: 'Income',
+    monthlySalary: 'Monthly Salary',
+    months: 'Months',
+    yearlySalary: 'Yearly Salary',
+    month: 'month',
+    fullYear: 'Full Year',
+    bonus: 'Bonus',
+    allowance: 'Allowance',
+    otherIncome: 'Other income',
+    perYear: 'per year',
+    
+    // Deductions Section
+    deductions: 'Deductions · Annual',
+    contributingSSF: 'Contributing to SSF',
+    ssfNote: 'Makes first 1% slab 0%',
+    ssf: 'SSF',
+    providentFund: 'Provident Fund',
+    cit: 'CIT',
+    lifeInsurance: 'Life Insurance',
+    donations: 'Donations',
+    
+    // Calculate Button
+    calculate: 'Calculate',
+    
+    // Results Section
+    calculationResults: 'Calculation Results',
+    resultsSubtitle: 'Side-by-side comparison · hover the ⓘ on each card for slab details.',
+    grossSalary: 'Gross Salary',
+    allowancesBonus: 'Allowances + Bonus',
+    deductionsLabel: 'Deductions',
+    netSalary: 'Net Salary',
+    taxableSalary: 'Taxable Salary',
+    incomeTax: 'Income Tax',
+    effectiveRate: 'Effective Rate',
+    cashInHand: 'Cash in Hand',
+    monthly: 'Monthly',
+    yearly: 'Yearly',
+    newSlabSaves: '{slab} saves you',
+    oldSlabSaves: '{slab} saves you',
+    noSavingsDifference: 'No Savings Difference',
+    noSavingsMessage: 'Both regimes result in the same tax amount. But hey, at least you\'re consistent! 🎯',
+    perMonth: 'per month',
+    newSlabLabel: 'New slab',
+    oldSlabLabel: 'Old slab',
+    
+    // Info Dialog
+    taxSlabs: 'Tax Slabs',
+    oldSlab: 'Old Slab',
+    newSlab: 'New Slab',
+    individualLabel: 'Individual',
+    coupleLabel: 'Couple',
+    incomeRange: 'Income Range',
+    rate: 'Rate',
+    from: 'From',
+    to: 'To',
+    above: 'and above',
+    upTo: 'Up to',
+    ssfContribution: 'SSF Contribution',
+    ssfContributionNote: 'If you contribute to SSF, the 1% social security tax in the first slab is waived (0%).',
+    oldSlabDesc: 'Separate brackets for individuals and couples. First slab is 1% Social Security Tax (0% with SSF).',
+    newSlabDesc: 'Same brackets for all taxpayers. First slab is 1% Social Security Tax (0% with SSF).',
+    oldSlabCouple: 'Old Slab — Couple',
+    oldSlabIndividual: 'Old Slab — Individual',
+    newSlabAll: 'New Slab — Individual & Couple',
+    deductionsCoverIncome: 'Your deductions cover your entire income. No slab breakdown to display.',
+    recheckSalary: 'For any mistake, recheck the salary amounts you entered.',
+    
+    // App Info Dialog
+    appInfoTitle: 'Nepal Tax Calculator',
+    whatIsThisApp: 'What is this app?',
+    appDescription: 'Nepal Tax Calculator helps salaried employees instantly compare their tax liability under the <strong>Old Slab (FY {oldFiscalYear})</strong> vs the newly proposed <strong>New Slab (FY {newFiscalYear})</strong> — so you can clearly see which regime benefits you more.',
+    sideBySideComparison: 'Side-by-Side Comparison',
+    oldVsNewTax: 'Old vs New Tax: See your income tax, effective rate, net income, and cash in hand for both regimes in one table.',
+    ssfBenefit: 'SSF Benefit: Contributing to SSF waives the 1% first-slab social security tax entirely.',
+    deductionCaps: 'Deduction Caps: SSF up to ₨ 5,00,000 · CIT/PF up to ₨ 3,00,000 · Insurance up to ₨ 40,000.',
+    individualCouple: 'Individual & Couple: Slab thresholds automatically adjust based on taxpayer type.',
+    privacyDisclaimer: 'Privacy & Disclaimer',
+    noDataStored: 'No data is stored or transmitted. All calculations run entirely in your browser. We do not collect, store, or share any of your financial information.',
+    informationalOnly: 'This tool is for informational purposes only and does not constitute professional tax or financial advice. Tax laws are subject to change — consult a certified tax professional for filing.',
+    figuresBasedOn: 'Figures are based on the proposed FY {newFiscalYear} (new slab) and FY {oldFiscalYear} (old slab) and may not reflect final legislation.',
+    gotIt: 'Got it, let me calculate',
+    neverShowAgain: 'Don\'t show this again',
+    
+    // Calculator
+    calculator: 'Calculator',
+    keyboardEnabled: 'Keyboard enabled (0-9, +, -, *, /, Backspace, Enter, Esc)',
+    cancel: 'Cancel',
+    applyValue: 'Apply Value [A]',
+    
+    // Currency
+    currency: '₨',
+    
+    // RegimeView
+    better: 'Better',
+    taxSlabBreakdown: 'Tax Slab Breakdown',
+    taxable: 'Taxable',
+    totalTax: 'Total Tax',
+    monthlyTax: 'Monthly Tax',
+    
+    // DeveloperInfo
+    developedBy: 'Developed By',
+  },
+  ne: {
+    // App Header
+    appTitle: 'नेपाल कर गणक',
+    appSubtitle: 'आर्थिक वर्ष {fiscalYear} · पुरानो बन नयाँ',
+    
+    // Fiscal Years
+    oldFiscalYear: '२०८२/८३',
+    newFiscalYear: '२०८३/८४',
+    fy: 'आर्थिक वर्ष',
+    
+    // Regime Names
+    oldRegimeName: 'पुरानो तह (२०८२/८३)',
+    newRegimeName: 'नयाँ तह',
+    
+    // Navigation
+    navEntry: 'प्रविष्टि',
+    navResults: 'नतिजा',
+    navInfo: 'जानकारी',
+    backToEntry: 'प्रविष्टिमा फर्कनुहोस्',
+    
+    // Taxpayer Type
+    taxpayerType: 'करदाता प्रकार',
+    individual: 'व्यक्तिगत',
+    couple: 'दम्पती',
+    
+    // Income Section
+    income: 'आम्दानी',
+    monthlySalary: 'मासिक तलब',
+    months: 'महिना',
+    yearlySalary: 'वार्षिक तलब',
+    month: 'महिना',
+    fullYear: 'पूर्ण वर्ष',
+    bonus: 'बोनस',
+    allowance: 'भत्ता',
+    otherIncome: 'अन्य आम्दानी',
+    perYear: 'प्रति वर्ष',
+    
+    // Deductions Section
+    deductions: 'कटौतीहरू · वार्षिक',
+    contributingSSF: 'सामाजिक सुरक्षा कोषमा योगदान',
+    ssfNote: 'पहिलो १% तहलाई ०% बनाउँछ',
+    ssf: 'सामाजिक सुरक्षा कोष',
+    providentFund: 'सञ्चय कोष',
+    cit: 'नागरिक लगानी ट्रस्ट',
+    lifeInsurance: 'जीवन बीमा',
+    donations: 'दान',
+    
+    // Calculate Button
+    calculate: 'गणना गर्नुहोस्',
+    
+    // Results Section
+    calculationResults: 'गणना नतिजाहरू',
+    resultsSubtitle: 'पक्ष-दर-पक्ष तुलना · प्रत्येक कार्डमा ⓘ माथि माउस राख्नुहोस् तह विवरणको लागि।',
+    grossSalary: 'कुल तलब',
+    allowancesBonus: 'भत्ता + बोनस',
+    deductionsLabel: 'कटौतीहरू',
+    netSalary: 'शुद्ध तलब',
+    taxableSalary: 'करयोग्य तलब',
+    incomeTax: 'आम्दानी कर',
+    effectiveRate: 'प्रभावकारी दर',
+    cashInHand: 'हातमा नगद',
+    monthly: 'मासिक',
+    yearly: 'वार्षिक',
+    newSlabSaves: '{slab} ले तपाईं बचाउँछ',
+    oldSlabSaves: '{slab} ले तपाईं बचाउँछ',
+    noSavingsDifference: 'बचतमा कुनै फरक छैन',
+    noSavingsMessage: 'दुवै व्यवस्थाले समान कर रकम दिन्छ। तर के भन्ने, कम्तिमा तपाईं एकै छिन्नुहुन्छ! 🎯',
+    perMonth: 'प्रति महिना',
+    newSlabLabel: 'नयाँ तह',
+    oldSlabLabel: 'पुरानो तह',
+    
+    // Info Dialog
+    taxSlabs: 'कर तहहरू',
+    oldSlab: 'पुरानो तह',
+    newSlab: 'नयाँ तह',
+    individualLabel: 'व्यक्तिगत',
+    coupleLabel: 'दम्पती',
+    incomeRange: 'आम्दानी सीमा',
+    rate: 'दर',
+    from: 'देखि',
+    to: 'सम्म',
+    above: 'भन्दा माथि',
+    upTo: 'सम्म',
+    ssfContribution: 'सामाजिक सुरक्षा कोष योगदान',
+    ssfContributionNote: 'यदि तपाईं सामाजिक सुरक्षा कोषमा योगदान गर्नुहुन्छ भने, पहिलो तहको १% सामाजिक सुरक्षा कर छुट हुन्छ (०%)।',
+    oldSlabDesc: 'व्यक्तिगत र दम्पतीको लागि छुट्टै तहहरू। पहिलो तह १% सामाजिक सुरक्षा कर हो (सामाजिक सुरक्षा कोषसँग ०%)।',
+    newSlabDesc: 'सबै करदाताहरूको लागि समान तहहरू। पहिलो तह १% सामाजिक सुरक्षा कर हो (सामाजिक सुरक्षा कोषसँग ०%)।',
+    oldSlabCouple: 'पुरानो तह — दम्पती',
+    oldSlabIndividual: 'पुरानो तह — व्यक्तिगत',
+    newSlabAll: 'नयाँ तह — व्यक्तिगत र दम्पती',
+    deductionsCoverIncome: 'तपाईंका कटौतीहरूले तपाईंको सम्पूर्ण आम्दानी ढाक्छन्। तह विभाजन देखाउनको लागि केही छैन।',
+    recheckSalary: 'कुनै गल्ती भएमा, तपाईंले प्रविष्ट गरेको तलब रकमहरू पुन: जाँच गर्नुहोस्।',
+    
+    // App Info Dialog
+    appInfoTitle: 'नेपाल कर गणक',
+    whatIsThisApp: 'यो एप के हो?',
+    appDescription: 'नेपाल कर गणकले तलबधारी कर्मचारीहरूलाई <strong>पुरानो तह (आर्थिक वर्ष {oldFiscalYear})</strong> र नयाँ प्रस्तावित <strong>नयाँ तह (आर्थिक वर्ष {newFiscalYear})</strong> अन्तर्गत उनीहरूको कर दायित्वको तुरन्त तुलना गर्न मद्दत गर्दछ — ताकि तपाईं कुन व्यवस्था तपाईंलाई बढी फाइदा हुन्छ स्पष्ट रूपमा देख्न सक्नुहुन्छ।',
+    sideBySideComparison: 'पक्ष-दर-पक्ष तुलना',
+    oldVsNewTax: 'पुरानो बन नयाँ कर: दुवै व्यवस्थाको लागि आम्दानी कर, प्रभावकारी दर, शुद्ध आम्दानी, र हातमा नगद एउटै तालिकामा हेर्नुहोस्।',
+    ssfBenefit: 'सामाजिक सुरक्षा कोष फाइदा: सामाजिक सुरक्षा कोषमा योगदान गर्नाले पहिलो तहको १% सामाजिक सुरक्षा कर पूर्ण रूपमा छुट हुन्छ।',
+    deductionCaps: 'कटौती सीमा: सामाजिक सुरक्षा कोष रु ५,००,००० सम्म · नागरिक लगानी ट्रस्ट/सञ्चय कोष रु ३,००,००० सम्म · बीमा रु ४०,००० सम्म।',
+    individualCouple: 'व्यक्तिगत र दम्पती: करदाता प्रकारको आधारमा तह सीमा स्वत: रूपमा समायोजन हुन्छ।',
+    privacyDisclaimer: 'गोपनीयता र अस्वीकरण',
+    noDataStored: 'कुनै पनि डाटा भण्डारण वा प्रसारण गरिँदैन। सबै गणना पूर्ण रूपमा तपाईंको ब्राउजरमा चल्छ। हामी तपाईंको कुनै पनि वित्तीय जानकारी संकलन, भण्डारण, वा साझा गर्दैनौं।',
+    informationalOnly: 'यो उपकरण केवल सूचनात्मक उद्देश्यका लागि हो र यसले व्यावसायिक कर वा वित्तीय सल्लाह प्रदान गर्दैन। कर कानून परिवर्तन हुन सक्छ — दाखिल गर्नका लागि प्रमाणित कर विशेषज्ञसँग सल्लाह लिनुहोस्।',
+    figuresBasedOn: 'आँकडाहरू प्रस्तावित आर्थिक वर्ष {newFiscalYear} (नयाँ तह) र आर्थिक वर्ष {oldFiscalYear} (पुरानो तह) मा आधारित छन् र अन्तिम विधानलाई प्रतिबिम्बित नगर्न सक्छन्।',
+    gotIt: 'ठीक छ, मलाई गणना गर्न दिनुहोस्',
+    neverShowAgain: 'यो फेरि नदेखाउनुहोस्',
+    
+    // Calculator
+    calculator: 'गणक',
+    keyboardEnabled: 'कीबोर्ड सक्षम (०-९, +, -, *, /, Backspace, Enter, Esc)',
+    cancel: 'रद्द गर्नुहोस्',
+    applyValue: 'मान लागू गर्नुहोस् [A]',
+    
+    // Currency
+    currency: 'रु',
+    
+    // RegimeView
+    better: 'बेहतर',
+    taxSlabBreakdown: 'कर तह विवरण',
+    taxable: 'करयोग्य',
+    totalTax: 'कुल कर',
+    monthlyTax: 'मासिक कर',
+    
+    // DeveloperInfo
+    developedBy: 'विकास गरिएको',
+  },
+} as const;
+
+export type TranslationKey = keyof typeof translations.en;

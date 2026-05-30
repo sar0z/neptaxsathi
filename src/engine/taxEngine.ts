@@ -13,16 +13,21 @@ import type {
 // ---------- formatting ----------
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export const npr = (n: number) =>
-  "NPR " +
-  new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-    Math.round(n)
-  );
+const convertToDevanagari = (numStr: string): string => {
+  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  return numStr.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+};
 
-export const num = (n: number) =>
-  new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-    Math.round(n)
-  );
+export const npr = (n: number, language: string = 'en', currency: string = 'NPR') => {
+  const formatted = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(n));
+  const displayNum = language === 'ne' ? convertToDevanagari(formatted) : formatted;
+  return `${currency} ${displayNum}`;
+};
+
+export const num = (n: number, language: string = 'en') => {
+  const formatted = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(n));
+  return language === 'ne' ? convertToDevanagari(formatted) : formatted;
+};
 
 // ---------- income & deductions ----------
 export function totalIncome(input: TaxInput): number {
