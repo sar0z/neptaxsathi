@@ -6,6 +6,11 @@ A modern, responsive, and privacy-first web application designed for salaried em
 
 ## 🌟 Key Features
 
+- **Bilingual Support**: Full English and Nepali language support with seamless switching. All UI elements, labels, and user-facing text are translated.
+- **Devanagari Numerals**: When Nepali language is selected, all numerical displays (calculations, percentages, currency values, slab amounts) automatically render in Devanagari numerals (०-९).
+- **Dynamic Currency**: Currency symbol adapts based on language — ⨀ for English and रु for Nepali.
+- **Noto Sans Devanagari Font**: Automatically applies the Noto Sans Devanagari font to text inputs when Nepali language is selected for proper rendering.
+- **Language Selector**: Beautiful circular flag icon dropdown with SVG flags for USA and Nepal for easy language switching.
 - **Side-by-Side Comparison**: Instantly see your total income, deductions, taxable income, progressive tax slab breakdown, total yearly/monthly tax, and net income (cash in hand) for both tax regimes in a single view.
 - **SSF (Social Security Fund) Toggle**: Applies the waiver/reduction of the first 1% social security tax slab (reducing it to 0%) for SSF contributors.
 - **Deduction Cap Enforcement**: Automatically enforces standard Nepalese tax deduction limits:
@@ -50,6 +55,9 @@ neptaxsathi/
 │   │   └── types.ts             # TypeScript definitions for inputs, slabs, & outputs
 │   ├── hooks/
 │   │   └── useIsDesktop.ts      # Custom hook to check screen dimensions (desktop vs. mobile)
+│   ├── i18n/
+│   │   ├── LanguageContext.tsx  # React Context for language state management
+│   │   └── translations.ts     # English and Nepali translation strings
 │   ├── utils/
 │   │   ├── cn.ts                # Tailwind class merging utility
 │   │   └── math.ts              # Mathematical / rounding utilities
