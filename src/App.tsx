@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Flex, Box, Heading, Text, Container, Dialog, Button, Separator } from "@radix-ui/themes";
 import type { TaxInput } from "./engine/types";
 import { useIsDesktop } from "./hooks/useIsDesktop";
+import { supabase } from "./lib/supabase";
 
 import DataEntry from "./components/DataEntry";
 import Calculation from "./components/Calculation";
@@ -49,8 +50,95 @@ export default function App() {
   const [tab, setTab] = useState<TabKey>("entry");
   const [infoOpen, setInfoOpen] = useState(false);
   const [appInfoOpen, setAppInfoOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
   const tabIndex = TABS.indexOf(tab);
+
+  // Generate or retrieve user ID
+  useEffect(() => {
+    let id = localStorage.getItem("neptaxsathi_user_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("neptaxsathi_user_id", id);
+    }
+    setUserId(id);
+  }, []);
+
+  // Load saved data from Supabase on mount
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadSavedData = async () => {
+      const { data } = await supabase
+        .from("tax_calculations")
+        .select("data")
+        .eq("user_id", userId)
+        .single();
+
+      if (data?.data) {
+        setInput(data.data as TaxInput);
+      }
+    };
+
+    loadSavedData();
+  }, [userId]);
+
+  // Auto-save to Supabase on input changes
+  useEffect(() => {
+    if (!userId) return;
+
+    const saveData = async () => {
+      // Get IP address
+      let ipAddress = null;
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        ipAddress = data.ip;
+      } catch {
+        // IP fetch failed, continue without it
+      }
+
+      // Get device info
+      const deviceInfo = {
+        screen: {
+          width: window.screen.width,
+          height: window.screen.height,
+          availWidth: window.screen.availWidth,
+          availHeight: window.screen.availHeight,
+          colorDepth: window.screen.colorDepth,
+          pixelRatio: window.devicePixelRatio,
+        },
+        navigator: {
+          platform: navigator.platform,
+          language: navigator.language,
+          languages: navigator.languages,
+          cookieEnabled: navigator.cookieEnabled,
+          onLine: navigator.onLine,
+        },
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
+      };
+
+      await supabase
+        .from("tax_calculations")
+        .upsert(
+          {
+            user_id: userId,
+            data: input,
+            ip_address: ipAddress,
+            user_agent: navigator.userAgent,
+            device_info: deviceInfo,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+    };
+
+    const timeoutId = setTimeout(saveData, 5000); // Debounce 5s
+    return () => clearTimeout(timeoutId);
+  }, [input, userId]);
 
   useEffect(() => {
     if (localStorage.getItem("appInfoDismissed") !== "true") {
