@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Flex, Box, Heading, Text, Container, Dialog, Button, Separator } from "@radix-ui/themes";
+import { Flex, Box, Heading, Text, Container, Dialog, Button, Separator, Theme } from "@radix-ui/themes";
+import { SunIcon, MoonIcon } from "@radix-ui/react-icons";
 import type { TaxInput } from "./engine/types";
 import { useIsDesktop } from "./hooks/useIsDesktop";
 
@@ -45,6 +46,11 @@ const NAV = [
 ];
 
 export default function App() {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const stored = localStorage.getItem("app-theme");
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
   const [input, setInput] = useState<TaxInput>(DEFAULT_INPUT);
   const [tab, setTab] = useState<TabKey>("entry");
   const [infoOpen, setInfoOpen] = useState(false);
@@ -70,7 +76,8 @@ export default function App() {
   };
 
   return (
-    <Flex direction="column" style={{ height: "100dvh", overflow: "hidden" }}>
+    <Theme appearance={theme} accentColor="indigo" grayColor="slate" radius="medium" scaling="100%">
+    <Flex direction="column" style={{ height: "100dvh", overflow: "hidden", background: "var(--color-background)" }}>
       {/* Top App Bar */}
       <Box
         px={{ initial: "4", lg: "6" }}
@@ -110,26 +117,51 @@ export default function App() {
               </Text>
             </Box>
           </Flex>
-          <Button
-            variant="ghost"
-            color="gray"
-            size="3"
-            onClick={() => setAppInfoOpen(true)}
-            style={{
-              cursor: "pointer",
-              borderRadius: "50%",
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-            }}
-          >
-            <Box style={{ width: 20, height: 20 }}>
-              <InfoIcon />
-            </Box>
-          </Button>
+          <Flex align="center" gap="2">
+            <Button
+              variant="ghost"
+              color="gray"
+              size="3"
+              onClick={() => {
+                const newTheme = theme === "light" ? "dark" : "light";
+                setTheme(newTheme);
+                localStorage.setItem("app-theme", newTheme);
+              }}
+              style={{
+                cursor: "pointer",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 8,
+              }}
+              aria-label="Toggle dark mode"
+            >
+              {theme === "light" ? <MoonIcon width="100%" height="100%" /> : <SunIcon width="100%" height="100%" />}
+            </Button>
+            <Button
+              variant="ghost"
+              color="gray"
+              size="3"
+              onClick={() => setAppInfoOpen(true)}
+              style={{
+                cursor: "pointer",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 8,
+              }}
+            >
+              <Box style={{ width: "100%", height: "100%" }}>
+                <InfoIcon />
+              </Box>
+            </Button>
+          </Flex>
         </Flex>
       </Box>
 
@@ -422,5 +454,6 @@ export default function App() {
         </Dialog.Content>
       </Dialog.Root>
     </Flex>
+    </Theme>
   );
 }
