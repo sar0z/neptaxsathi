@@ -28,6 +28,8 @@ export default function Calculation({ input, onBack }: Props) {
   const oldIsBetter = savingsYearly < 0;
   const neutral = Math.abs(savingsYearly) < 1;
   const hasTaxableIncome = oldResult.taxableIncome > 0 || newResult.taxableIncome > 0;
+  const months = input.months > 0 ? input.months : 12;
+  const retirementYearly = input.deductions.ssf + input.deductions.pf + input.deductions.cit;
 
   const accent = neutral ? "gray" : newIsBetter ? "teal" : "indigo";
 
@@ -65,17 +67,138 @@ export default function Calculation({ input, onBack }: Props) {
     return t('donations');
   };
 
-  const tableRows = [
-    { label: `${t('grossTaxBeforeCredits')} (${t('yearly')})`, old: oldResult.grossTaxYearly, new: newResult.grossTaxYearly },
+  const yearlyTableRows = [
+    { label: t('grossTaxBeforeCredits'), old: oldResult.grossTaxYearly, new: newResult.grossTaxYearly },
     { label: t('taxCredits'), old: oldResult.totalCredits, new: newResult.totalCredits, isCredit: true },
-    { label: `${t('incomeTax')} (${t('yearly')})`, old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
-    { label: `${t('incomeTax')} (${t('monthly')})`, old: oldResult.totalTaxMonthly, new: newResult.totalTaxMonthly },
+    { label: t('incomeTax'), old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
     { label: t('effectiveRate'), old: oldResult.effectiveRate * 100, new: newResult.effectiveRate * 100, isPercent: true },
-    { label: `${t('netSalary')} (${t('yearly')})`, old: oldResult.netIncomeYearly, new: newResult.netIncomeYearly },
-    { label: `${t('netSalary')} (${t('monthly')})`, old: oldResult.netIncomeMonthly, new: newResult.netIncomeMonthly },
-    { label: `${t('cashInHand')} (${t('yearly')})`, old: input.income.salary - oldResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit), new: input.income.salary - newResult.totalTaxYearly - (input.deductions.ssf + input.deductions.pf + input.deductions.cit) },
-    { label: `${t('cashInHand')} (${t('monthly')})`, old: (input.income.salary / input.months) - oldResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months), new: (input.income.salary / input.months) - newResult.totalTaxMonthly - ((input.deductions.ssf + input.deductions.pf + input.deductions.cit) / input.months) },
+    { label: t('netSalary'), old: oldResult.netIncomeYearly, new: newResult.netIncomeYearly },
+    { label: t('cashInHand'), old: input.income.salary - oldResult.totalTaxYearly - retirementYearly, new: input.income.salary - newResult.totalTaxYearly - retirementYearly },
   ];
+
+  const monthlyTableRows = [
+    { label: t('monthlySalary'), old: input.income.salary / months, new: input.income.salary / months },
+    { label: t('ssf'), old: input.deductions.ssf / months, new: input.deductions.ssf / months, isCredit: true },
+    { label: t('providentFund'), old: input.deductions.pf / months, new: input.deductions.pf / months, isCredit: true },
+    { label: t('cit'), old: input.deductions.cit / months, new: input.deductions.cit / months, isCredit: true },
+    { label: t('incomeTax'), old: oldResult.totalTaxMonthly, new: newResult.totalTaxMonthly },
+    { label: t('netSalary'), old: oldResult.netIncomeMonthly, new: newResult.netIncomeMonthly },
+    { label: t('cashInHand'), old: (input.income.salary / months) - oldResult.totalTaxMonthly - (retirementYearly / months), new: (input.income.salary / months) - newResult.totalTaxMonthly - (retirementYearly / months) },
+  ];
+
+  const renderComparisonTable = (
+    title: string,
+    rows: {
+      label: string;
+      old: number;
+      new: number;
+      isCredit?: boolean;
+      isPercent?: boolean;
+    }[]
+  ) => (
+    <Box
+      style={{
+        background: "var(--gray-1)",
+        border: "1px solid var(--gray-a4)",
+        borderRadius: "var(--radius-4)",
+        overflow: "hidden",
+      }}
+    >
+      <Box px="4" py="3" style={{ background: "var(--gray-3)", borderBottom: "1px solid var(--gray-a4)" }}>
+        <Text size="1" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {title}
+        </Text>
+      </Box>
+      <Table.Root variant="ghost" style={{ border: "none", width: "100%" }}>
+        <Table.Header>
+          <Table.Row style={{ background: "var(--gray-3)" }}>
+            <Table.ColumnHeaderCell style={{ color: "var(--gray-11)", fontWeight: 600, padding: "12px 20px", fontSize: 11, letterSpacing: "0.06em", width: "40%" }}>
+              {t('incomeTax').split(' ')[0]}
+            </Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
+              <Box style={{ display: "flex", justifyContent: "flex-end" }}>
+                <Box style={{ background: "var(--indigo-3)", border: "1px solid var(--indigo-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--indigo-9)" }} />
+                  <Text size="1" style={{ color: "var(--indigo-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{t('oldSlab')}</Text>
+                </Box>
+              </Box>
+            </Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
+              <Box style={{ display: "flex", justifyContent: "flex-end" }}>
+                <Box style={{ background: "var(--teal-3)", border: "1px solid var(--teal-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--teal-9)" }} />
+                  <Text size="1" style={{ color: "var(--teal-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{t('newSlab')}</Text>
+                </Box>
+              </Box>
+            </Table.ColumnHeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {rows.map((row, i) => {
+            const oldIsBetter = row.isCredit ? row.old > row.new : row.old < row.new;
+            const newIsBetterRow = row.isCredit ? row.new > row.old : row.new < row.old;
+            const formatValue = (val: number) => {
+              if (row.isPercent) {
+                const percentValue = val.toFixed(2);
+                if (language === 'ne') {
+                  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+                  const converted = percentValue.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+                  return `${converted}%`;
+                }
+                return `${percentValue}%`;
+              }
+              return npr(val, language, currency);
+            };
+            return (
+              <Table.Row
+                key={row.label}
+                style={{
+                  borderTop: "1px solid var(--gray-a3)",
+                  background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)",
+                }}
+              >
+                <Table.Cell style={{ padding: "14px 20px", color: "var(--gray-11)", fontWeight: 500, fontSize: 14 }}>
+                  {row.label}
+                </Table.Cell>
+                <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
+                  <Box
+                    style={{
+                      display: "inline-block",
+                      background: oldIsBetter ? "var(--indigo-2)" : "var(--gray-2)",
+                      border: `1px solid ${oldIsBetter ? "var(--indigo-a4)" : "var(--gray-a3)"}`,
+                      borderRadius: "var(--radius-2)",
+                      padding: "3px 10px",
+                      color: "var(--indigo-11)",
+                      fontWeight: 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    {formatValue(row.old)}
+                  </Box>
+                </Table.Cell>
+                <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
+                  <Box
+                    style={{
+                      display: "inline-block",
+                      background: newIsBetterRow ? "var(--teal-2)" : "var(--gray-2)",
+                      border: `1px solid ${newIsBetterRow ? "var(--teal-a4)" : "var(--gray-a3)"}`,
+                      borderRadius: "var(--radius-2)",
+                      padding: "3px 10px",
+                      color: "var(--teal-11)",
+                      fontWeight: 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    {formatValue(row.new)}
+                  </Box>
+                </Table.Cell>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table.Root>
+    </Box>
+  );
 
   return (
     <Flex direction="column" gap="4" pb="6" className="content-fade">
@@ -489,104 +612,9 @@ export default function Calculation({ input, onBack }: Props) {
         </Table.Root>
       </Box>
 
-      {/* Comparison Table */}
-      <Box
-        style={{
-          background: "var(--gray-1)",
-          border: "1px solid var(--gray-a4)",
-          borderRadius: "var(--radius-4)",
-          overflow: "hidden",
-        }}
-      >
-        <Table.Root variant="ghost" style={{ border: "none", width: "100%" }}>
-          <Table.Header>
-            <Table.Row style={{ background: "var(--gray-3)" }}>
-              <Table.ColumnHeaderCell style={{ color: "var(--gray-11)", fontWeight: 600, padding: "12px 20px", fontSize: 11, letterSpacing: "0.06em", width: "40%" }}>
-                {t('incomeTax').split(' ')[0]}
-              </Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
-                <Box style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Box style={{ background: "var(--indigo-3)", border: "1px solid var(--indigo-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--indigo-9)" }} />
-                    <Text size="1" style={{ color: "var(--indigo-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{t('oldSlab')}</Text>
-                  </Box>
-                </Box>
-              </Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "30%" }}>
-                <Box style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Box style={{ background: "var(--teal-3)", border: "1px solid var(--teal-a5)", borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--teal-9)" }} />
-                    <Text size="1" style={{ color: "var(--teal-11)", fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{t('newSlab')}</Text>
-                  </Box>
-                </Box>
-              </Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {tableRows.map((row, i) => {
-              const oldIsBetter = row.isCredit ? row.old > row.new : row.old < row.new;
-              const newIsBetterRow = row.isCredit ? row.new > row.old : row.new < row.old;
-              const formatValue = (val: number) => {
-                if (row.isPercent) {
-                  const percentValue = val.toFixed(2);
-                  if (language === 'ne') {
-                    const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
-                    const converted = percentValue.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
-                    return `${converted}%`;
-                  }
-                  return `${percentValue}%`;
-                }
-                return npr(val, language, currency);
-              };
-              return (
-                <Table.Row
-                  key={i}
-                  style={{
-                    borderTop: "1px solid var(--gray-a3)",
-                    background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)",
-                  }}
-                >
-                  <Table.Cell style={{ padding: "14px 20px", color: "var(--gray-11)", fontWeight: 500, fontSize: 14 }}>
-                    {row.label}
-                  </Table.Cell>
-                  <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
-                    <Box
-                      style={{
-                        display: "inline-block",
-                        background: oldIsBetter ? "var(--indigo-2)" : "var(--gray-2)",
-                        border: `1px solid ${oldIsBetter ? "var(--indigo-a4)" : "var(--gray-a3)"}`,
-                        borderRadius: "var(--radius-2)",
-                        padding: "3px 10px",
-                        color: "var(--indigo-11)",
-                        fontWeight: 600,
-                        fontSize: 14,
-                      }}
-                    >
-                      {formatValue(row.old)}
-                    </Box>
-                  </Table.Cell>
-                  <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
-                    <Box
-                      style={{
-                        display: "inline-block",
-                        background: newIsBetterRow ? "var(--teal-2)" : "var(--gray-2)",
-                        border: `1px solid ${newIsBetterRow ? "var(--teal-a4)" : "var(--gray-a3)"}`,
-                        borderRadius: "var(--radius-2)",
-                        padding: "3px 10px",
-                        color: "var(--teal-11)",
-                        fontWeight: 600,
-                        fontSize: 14,
-                      }}
-                    >
-                      {formatValue(row.new)}
-                    </Box>
-                  </Table.Cell>
-                </Table.Row>
-              );
-            })}
-          </Table.Body>
-        </Table.Root>
-      </Box>
+      {/* Comparison Tables */}
+      {renderComparisonTable(`${t('shareTaxComparison')} · ${t('yearly')}`, yearlyTableRows)}
+      {renderComparisonTable(`${t('shareTaxComparison')} · ${t('monthly')}`, monthlyTableRows)}
 
       {/* No taxable income message */}
       {!hasTaxableIncome && (
