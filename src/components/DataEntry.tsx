@@ -415,7 +415,39 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <MoneyRow label={t('providentFund')} value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyRow label={t('medicalInsurance')} value={input.deductions.medicalInsurance} onChange={(v) => setDed("medicalInsurance", v)} onCalculator={() => openCalculator('deductions', 'medicalInsurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyRow label={t('donations')} value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix={t('perYear')} currency={t('currency')} language={language} />
+
+            <Flex
+              asChild
+              align="center"
+              justify="between"
+              gap="3"
+              p="3"
+              style={{
+                background: "var(--gray-2)",
+                border: "1px solid var(--gray-a3)",
+                borderRadius: "var(--radius-3)",
+              }}
+            >
+              <label>
+                <Box>
+                  <Text as="div" size="2" weight="medium">
+                    {t('femaleOnlyRemuneration')}
+                  </Text>
+                  <Text as="div" size="1" color="gray">
+                    {t('femaleOnlyRemunerationNote')}
+                  </Text>
+                </Box>
+                <Switch
+                  checked={input.isFemaleOnlyRemuneration}
+                  size="3"
+                  onCheckedChange={(v) =>
+                    setInput((p) => ({ ...p, isFemaleOnlyRemuneration: v }))
+                  }
+                />
+              </label>
+            </Flex>
           </Flex>
         </Box>
       </Flex>

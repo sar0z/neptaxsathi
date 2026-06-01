@@ -41,38 +41,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjRRdLdxI9rZoWj-g9dE6Y8uCJy3Y2KPm1e3r5.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKp1e3r5.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKpVe3r5.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKJle3r5.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 html,
 body,
 #root {
@@ -397,5 +365,96 @@ body[data-language="ne"] .tnum {
   }
   to {
     width: 0%;
+  }
+}
+
+/* ============================================================
+   Share preview sheet
+   ============================================================ */
+.share-sheet {
+  background: var(--color-panel-solid);
+  border: 1px solid var(--gray-a4);
+  border-radius: var(--radius-4);
+  padding: 24px;
+  box-shadow: 0 12px 34px -24px var(--gray-a8);
+}
+
+.share-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-a4);
+}
+
+.share-brand {
+  flex-shrink: 0;
+  text-align: right;
+  border: 1px solid var(--gray-a4);
+  border-radius: var(--radius-3);
+  padding: 10px 12px;
+  background: var(--gray-2);
+}
+
+.share-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.share-regime,
+.share-section {
+  background: var(--color-panel-solid);
+  border: 1px solid var(--gray-a4);
+  border-radius: var(--radius-4);
+  padding: 16px;
+}
+
+.share-regime-indigo {
+  background: linear-gradient(135deg, var(--indigo-2), var(--gray-1));
+  border-color: var(--indigo-a5);
+}
+
+.share-regime-teal {
+  background: linear-gradient(135deg, var(--teal-2), var(--gray-1));
+  border-color: var(--teal-a5);
+}
+
+.share-main-number {
+  line-height: 1;
+  margin-top: 8px;
+  word-break: break-word;
+}
+
+.share-table {
+  overflow: hidden;
+  border: 1px solid var(--gray-a4);
+  border-radius: var(--radius-3);
+}
+
+.share-table th {
+  background: var(--gray-3);
+  color: var(--gray-11);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.share-table th,
+.share-table td {
+  padding: 11px 14px;
+}
+
+.share-table tr + tr {
+  border-top: 1px solid var(--gray-a3);
+}
+
+@media (max-width: 520px) {
+  .share-sheet {
+    padding: 16px;
+  }
+
+  .share-header {
+    flex-direction: column;
+  }
+
+  .share-brand {
+    width: 100%;
+    text-align: left;
   }
 }

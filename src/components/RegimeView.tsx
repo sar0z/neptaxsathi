@@ -143,6 +143,28 @@ export default function RegimeView({
                       </Table.Cell>
                     </Table.Row>
                   ))}
+                  {result.totalCredits > 0 && (
+                    <>
+                      <Table.Row style={{ background: `var(--${color}-a1)`, borderTop: "2px solid var(--gray-a4)" }}>
+                        <Table.Cell style={{ padding: "14px 16px", fontWeight: 700, color: `var(--${color}-11)` }}>
+                          {t('grossTaxBeforeCredits')}
+                        </Table.Cell>
+                        <Table.Cell style={{ textAlign: "right", padding: "14px 16px" }} />
+                        <Table.Cell style={{ textAlign: "right", padding: "14px 16px", fontWeight: 700, color: `var(--${color}-11)` }} className="tnum">
+                          {num(result.grossTaxYearly, language)}
+                        </Table.Cell>
+                      </Table.Row>
+                      <Table.Row style={{ background: "var(--green-a2)", borderTop: "1px solid var(--gray-a3)" }}>
+                        <Table.Cell style={{ padding: "14px 16px", fontWeight: 600, color: "var(--green-11)" }}>
+                          {t('femaleTaxCredit')}
+                        </Table.Cell>
+                        <Table.Cell style={{ textAlign: "right", padding: "14px 16px" }} />
+                        <Table.Cell style={{ textAlign: "right", padding: "14px 16px", fontWeight: 600, color: "var(--green-11)" }} className="tnum">
+                          -{num(result.femaleTaxCredit, language)}
+                        </Table.Cell>
+                      </Table.Row>
+                    </>
+                  )}
                   {/* Total Summary Row */}
                   <Table.Row style={{ background: `var(--${color}-a2)`, borderTop: "2px solid var(--gray-a4)" }}>
                     <Table.Cell style={{ padding: "14px 16px", fontWeight: 700, color: `var(--${color}-11)` }}>
