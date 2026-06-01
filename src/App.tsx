@@ -182,32 +182,7 @@ export default function App() {
                 </Text>
               </Box>
             </Flex>
-            <Flex align="center" gap="2">
-              <Button
-                variant="ghost"
-                color="gray"
-                size="3"
-                onClick={() => {
-                  const newTheme = theme === "light" ? "dark" : "light";
-                  setTheme(newTheme);
-                  localStorage.setItem("app-theme", newTheme);
-                }}
-                style={{
-                  cursor: "pointer",
-                  borderRadius: "50%",
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                }}
-                aria-label="Toggle dark mode"
-              >
-                <Box style={{ width: 20, height: 20, display: "flex" }}>
-                  {theme === "light" ? <MoonIcon /> : <SunIcon />}
-                </Box>
-              </Button>
+            <Flex align="center" gap="5">
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                   <Button
@@ -244,26 +219,54 @@ export default function App() {
                 </DropdownMenu.Content>
               </DropdownMenu.Root>
 
-              <Button
-                variant="ghost"
-                color="gray"
-                size="3"
-                onClick={() => setAppInfoOpen(true)}
-                style={{
-                  cursor: "pointer",
-                  borderRadius: "50%",
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                }}
-              >
-                <Box style={{ width: 20, height: 20, display: "flex" }}>
-                  <InfoIcon />
-                </Box>
-              </Button>
+              <Flex align="center" gap="4">
+                <Button
+                  variant="ghost"
+                  color="gray"
+                  size="3"
+                  onClick={() => {
+                    const newTheme = theme === "light" ? "dark" : "light";
+                    setTheme(newTheme);
+                    localStorage.setItem("app-theme", newTheme);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    borderRadius: "50%",
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                  }}
+                  aria-label="Toggle dark mode"
+                >
+                  <Box style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {theme === "light" ? <MoonIcon style={{ width: "100%", height: "100%" }} /> : <SunIcon style={{ width: "100%", height: "100%" }} />}
+                  </Box>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  color="gray"
+                  size="3"
+                  onClick={() => setAppInfoOpen(true)}
+                  style={{
+                    cursor: "pointer",
+                    borderRadius: "50%",
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                  }}
+                >
+                  <Box style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <InfoIcon style={{ width: "100%", height: "100%" }} />
+                  </Box>
+                </Button>
+              </Flex>
             </Flex>
           </Flex>
         </Box>
