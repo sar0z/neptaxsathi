@@ -92,6 +92,8 @@ export const translations = {
     shareNow: 'Share Now',
     downloadPdf: 'Save as PDF',
     generatingPdf: 'Generating PDF...',
+    shareAsImage: 'Share as Image',
+    generatingImage: 'Generating Image...',
     copyShareText: 'Copy Share Text',
     
     // Info Dialog
@@ -242,6 +244,8 @@ export const translations = {
     shareNow: 'अहिले साझा गर्नुहोस्',
     downloadPdf: 'PDF को रूपमा सुरक्षित गर्नुहोस्',
     generatingPdf: 'PDF उत्पन्न गर्दै...',
+    shareAsImage: 'छवि को रूपमा साझा गर्नुहोस्',
+    generatingImage: 'छवि उत्पन्न गर्दै...',
     copyShareText: 'साझा पाठ प्रतिलिपि गर्नुहोस्',
     
     // Info Dialog

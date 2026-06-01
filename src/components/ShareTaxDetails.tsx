@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Box, Button, Dialog, Flex, Grid, Heading, Separator, Table, Text } from "@radix-ui/themes";
 import { DownloadIcon, Share1Icon } from "@radix-ui/react-icons";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import type { TaxInput, RegimeResult } from "../engine/types";
 import { calculateRegime, npr } from "../engine/taxEngine";
@@ -291,42 +291,15 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
   };
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
-  const handlePrint = async () => {
-    if (!printRef.current || isGeneratingPdf) return;
+  const handleShareAsImage = async () => {
+    if (!printRef.current || isGeneratingImage) return;
 
-    setIsGeneratingPdf(true);
-    window.umami?.track("tax-details-pdf-generation-started");
+    setIsGeneratingImage(true);
+    window.umami?.track("tax-details-image-generation-started");
 
     try {
-      // Store original styles to restore later
-      const originalStyles = new Map<HTMLElement, string>();
-      
-      // Temporarily replace CSS variables with solid colors
-      const elements = printRef.current.querySelectorAll('*');
-      elements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          const computedStyle = window.getComputedStyle(el);
-          originalStyles.set(el, el.getAttribute('style') || '');
-          
-          // Override CSS variables with computed values (only if they're valid RGB/RGBA)
-          const color = computedStyle.color;
-          const bgColor = computedStyle.backgroundColor;
-          const borderColor = computedStyle.borderColor;
-          
-          // Only set if it's a valid rgb/rgba value (not a CSS variable or color function)
-          if (color && (color.startsWith('rgb') || color.startsWith('#'))) {
-            el.style.color = color;
-          }
-          if (bgColor && (bgColor.startsWith('rgb') || bgColor.startsWith('#'))) {
-            el.style.backgroundColor = bgColor;
-          }
-          if (borderColor && (borderColor.startsWith('rgb') || borderColor.startsWith('#'))) {
-            el.style.borderColor = borderColor;
-          }
-        }
-      });
-
       // Capture the element as canvas with high quality
       const canvas = await html2canvas(printRef.current, {
         scale: 2, // Higher quality
@@ -335,21 +308,75 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
         logging: false,
         backgroundColor: "#ffffff",
         windowWidth: 860,
-        foreignObjectRendering: false,
         imageTimeout: 5000,
         removeContainer: true,
       });
 
-      // Restore original styles
-      elements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          const originalStyle = originalStyles.get(el);
-          if (originalStyle) {
-            el.setAttribute('style', originalStyle);
-          } else {
-            el.removeAttribute('style');
-          }
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          window.umami?.track("tax-details-image-error");
+          setIsGeneratingImage(false);
+          return;
         }
+
+        // Generate filename with date
+        const date = new Date().toISOString().split("T")[0];
+        const taxpayerType = input.taxpayerType === "couple" ? "Couple" : "Individual";
+        const filename = `Nepal_Tax_Report_${taxpayerType}_${date}.png`;
+
+        // Create file for sharing
+        const file = new File([blob], filename, { type: "image/png" });
+
+        try {
+          if (navigator.share && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: t("sharePreviewTitle"),
+            });
+            window.umami?.track("tax-details-image-shared");
+          } else {
+            // Fallback: download the image
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+            window.umami?.track("tax-details-image-downloaded");
+          }
+        } catch (error) {
+          console.error("Error sharing image:", error);
+          window.umami?.track("tax-details-image-share-cancelled");
+        } finally {
+          setIsGeneratingImage(false);
+        }
+      }, "image/png");
+    } catch (error) {
+      console.error("Error generating image:", error);
+      window.umami?.track("tax-details-image-error");
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!printRef.current || isGeneratingPdf) return;
+
+    setIsGeneratingPdf(true);
+    window.umami?.track("tax-details-pdf-generation-started");
+
+    try {
+      // Capture the element as canvas with high quality
+      // html2canvas-pro natively supports modern color functions (color(), oklch(), lab())
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: 860,
+        imageTimeout: 5000,
+        removeContainer: true,
       });
 
       // Calculate PDF dimensions (A4 size)
@@ -430,6 +457,16 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
 
         <Box px="5" py="4" style={{ borderTop: "1px solid var(--gray-a4)", background: "var(--color-panel-solid)" }}>
           <Flex gap="3" justify="end" wrap="wrap">
+            <Button 
+              variant="soft" 
+              color="gray" 
+              onClick={handleShareAsImage} 
+              disabled={isGeneratingImage}
+              style={{ cursor: isGeneratingImage ? "wait" : "pointer" }}
+            >
+              <Share1Icon width="16" height="16" />
+              {isGeneratingImage ? t("generatingImage") : t("shareAsImage")}
+            </Button>
             <Button 
               variant="soft" 
               color="gray" 
