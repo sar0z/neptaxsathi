@@ -8,6 +8,7 @@ import type {
   Slab,
   SlabComputation,
   RegimeResult,
+  DeductionComputation,
 } from "./types";
 
 // ---------- formatting ----------
@@ -39,14 +40,62 @@ export function totalIncome(input: TaxInput): number {
 }
 
 export function totalDeductions(input: TaxInput): number {
+  return calculateAllowedDeductions(totalIncome(input), input).total;
+}
+
+export function calculateAllowedDeductions(
+  incomeBeforeRetirementDeduction: number,
+  input: TaxInput
+): { breakdown: DeductionComputation[]; total: number } {
   const d = input.deductions;
-  const sum =
+  const retirementEntered =
     Math.max(0, d.ssf || 0) +
     Math.max(0, d.pf || 0) +
-    Math.max(0, d.cit || 0) +
-    Math.max(0, d.insurance || 0) +
-    Math.max(0, d.donations || 0);
-  return Math.max(0, sum);
+    Math.max(0, d.cit || 0);
+  const retirementLimit = Math.min(
+    retirementEntered,
+    Math.max(0, incomeBeforeRetirementDeduction) / 3,
+    500_000
+  );
+  const lifeEntered = Math.max(0, d.insurance || 0);
+  const medicalEntered = Math.max(0, d.medicalInsurance || 0);
+  const donationsEntered = Math.max(0, d.donations || 0);
+
+  const breakdown: DeductionComputation[] = [
+    {
+      key: "retirement",
+      label: "Retirement fund",
+      entered: round2(retirementEntered),
+      allowed: round2(retirementLimit),
+      capped: retirementLimit < retirementEntered,
+    },
+    {
+      key: "lifeInsurance",
+      label: "Life insurance",
+      entered: round2(lifeEntered),
+      allowed: round2(Math.min(lifeEntered, 40_000)),
+      capped: lifeEntered > 40_000,
+    },
+    {
+      key: "medicalInsurance",
+      label: "Medical insurance",
+      entered: round2(medicalEntered),
+      allowed: round2(Math.min(medicalEntered, 20_000)),
+      capped: medicalEntered > 20_000,
+    },
+    {
+      key: "donations",
+      label: "Donations",
+      entered: round2(donationsEntered),
+      allowed: round2(donationsEntered),
+      capped: false,
+    },
+  ];
+
+  return {
+    breakdown,
+    total: round2(breakdown.reduce((sum, item) => sum + item.allowed, 0)),
+  };
 }
 
 // ---------- progressive slab calculator ----------
@@ -92,7 +141,8 @@ export function calculateRegime(
   regime: Regime
 ): RegimeResult {
   const income = totalIncome(input);
-  const deductions = totalDeductions(input);
+  const { breakdown: deductionBreakdown, total: deductions } =
+    calculateAllowedDeductions(income, input);
   const taxableIncome = Math.max(0, income - deductions);
 
   // pick slab set
@@ -106,7 +156,12 @@ export function calculateRegime(
     slabs = slabs.map((s, i) => (i === 0 ? { ...s, rate: 0 } : s));
   }
 
-  const { breakdown, total } = calculateSlabs(taxableIncome, slabs);
+  const { breakdown, total: grossTax } = calculateSlabs(taxableIncome, slabs);
+  const femaleTaxCredit = input.isFemaleOnlyRemuneration
+    ? Math.min(grossTax * 0.1, grossTax)
+    : 0;
+  const totalCredits = femaleTaxCredit;
+  const total = Math.max(0, grossTax - totalCredits);
 
   const months = input.months > 0 ? input.months : 12;
   const netYearly = income - total;
@@ -118,6 +173,10 @@ export function calculateRegime(
     totalDeductions: round2(deductions),
     taxableIncome: round2(taxableIncome),
     slabs: breakdown,
+    deductionBreakdown,
+    grossTaxYearly: round2(grossTax),
+    femaleTaxCredit: round2(femaleTaxCredit),
+    totalCredits: round2(totalCredits),
     totalTaxYearly: round2(total),
     totalTaxMonthly: round2(total / months),
     netIncomeYearly: round2(netYearly),

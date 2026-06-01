@@ -1,12 +1,13 @@
-import { useMemo } from "react";
-import { Flex, Text, Heading, Box, Button, Table, Grid } from "@radix-ui/themes";
-import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon } from "@radix-ui/react-icons";
+import { useMemo, useState } from "react";
+import { Flex, Text, Heading, Box, Button, Table, Grid, Badge } from "@radix-ui/themes";
+import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon, Share1Icon } from "@radix-ui/react-icons";
 import type { TaxInput } from "../engine/types";
 import { calculateRegime, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import RegimeView from "./RegimeView";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import { useTranslation } from "../i18n/LanguageContext";
+import ShareTaxDetails from "./ShareTaxDetails";
 
 interface Props {
   input: TaxInput;
@@ -17,6 +18,7 @@ export default function Calculation({ input, onBack }: Props) {
   const { t, language } = useTranslation();
   const currency = t('currency');
   const isDesktop = useIsDesktop();
+  const [shareOpen, setShareOpen] = useState(false);
   const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
   const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
 
@@ -56,7 +58,16 @@ export default function Calculation({ input, onBack }: Props) {
     [`${t('above')} 40L`, "29%"],
   ];
 
+  const deductionLabel = (key: string) => {
+    if (key === "retirement") return t('retirementFund');
+    if (key === "lifeInsurance") return t('lifeInsurance');
+    if (key === "medicalInsurance") return t('medicalInsurance');
+    return t('donations');
+  };
+
   const tableRows = [
+    { label: `${t('grossTaxBeforeCredits')} (${t('yearly')})`, old: oldResult.grossTaxYearly, new: newResult.grossTaxYearly },
+    { label: t('taxCredits'), old: oldResult.totalCredits, new: newResult.totalCredits, isCredit: true },
     { label: `${t('incomeTax')} (${t('yearly')})`, old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
     { label: `${t('incomeTax')} (${t('monthly')})`, old: oldResult.totalTaxMonthly, new: newResult.totalTaxMonthly },
     { label: t('effectiveRate'), old: oldResult.effectiveRate * 100, new: newResult.effectiveRate * 100, isPercent: true },
@@ -68,6 +79,22 @@ export default function Calculation({ input, onBack }: Props) {
 
   return (
     <Flex direction="column" gap="4" pb="6" className="content-fade">
+      <Flex justify="end">
+        <Button
+          size="3"
+          variant="soft"
+          color="indigo"
+          onClick={() => {
+            setShareOpen(true);
+            window.umami?.track("share-preview-opened");
+          }}
+          style={{ cursor: "pointer" }}
+        >
+          <Share1Icon width="16" height="16" />
+          {t("shareTaxDetails")}
+        </Button>
+      </Flex>
+
       {/* Savings hero banner */}
       <Box
         className="hero-gradient elegant-card"
@@ -410,6 +437,58 @@ export default function Calculation({ input, onBack }: Props) {
         </Box>
       </Grid>
 
+      <Box
+        style={{
+          background: "var(--gray-1)",
+          border: "1px solid var(--gray-a4)",
+          borderRadius: "var(--radius-4)",
+          overflow: "hidden",
+        }}
+      >
+        <Box px="4" py="3" style={{ background: "var(--gray-3)", borderBottom: "1px solid var(--gray-a4)" }}>
+          <Text size="1" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            {t('allowedDeductions')}
+          </Text>
+        </Box>
+        <Table.Root variant="ghost" style={{ border: "none", width: "100%" }}>
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeaderCell style={{ padding: "10px 16px", color: "var(--gray-11)", fontWeight: 600 }}>
+                {t('deductionsLabel')}
+              </Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                {t('enteredAmount')}
+              </Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                {t('allowedAmount')}
+              </Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {oldResult.deductionBreakdown.map((item, i) => (
+              <Table.Row key={item.key} style={{ borderTop: "1px solid var(--gray-a3)", background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
+                <Table.Cell style={{ padding: "12px 16px" }}>
+                  <Flex align="center" gap="2">
+                    <Text size="2" color="gray" weight="medium">{deductionLabel(item.key)}</Text>
+                    {item.capped && (
+                      <Badge color="amber" variant="soft" size="1" radius="full">
+                        {t('capped')}
+                      </Badge>
+                    )}
+                  </Flex>
+                </Table.Cell>
+                <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", color: "var(--gray-11)" }}>
+                  {npr(item.entered, language, currency)}
+                </Table.Cell>
+                <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "var(--gray-12)" }}>
+                  {npr(item.allowed, language, currency)}
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      </Box>
+
       {/* Comparison Table */}
       <Box
         style={{
@@ -445,8 +524,8 @@ export default function Calculation({ input, onBack }: Props) {
           </Table.Header>
           <Table.Body>
             {tableRows.map((row, i) => {
-              const oldIsBetter = row.old < row.new;
-              const newIsBetterRow = row.new < row.old;
+              const oldIsBetter = row.isCredit ? row.old > row.new : row.old < row.new;
+              const newIsBetterRow = row.isCredit ? row.new > row.old : row.new < row.old;
               const formatValue = (val: number) => {
                 if (row.isPercent) {
                   const percentValue = val.toFixed(2);
@@ -556,6 +635,8 @@ export default function Calculation({ input, onBack }: Props) {
           </Flex>
         </Button>
       )}
+
+      <ShareTaxDetails input={input} open={shareOpen} onOpenChange={setShareOpen} />
     </Flex>
   );
 }

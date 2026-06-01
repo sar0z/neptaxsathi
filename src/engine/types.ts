@@ -16,6 +16,7 @@ export interface DeductionInput {
   pf: number; // Provident Fund
   cit: number; // Citizen Investment Trust
   insurance: number; // Life insurance premium
+  medicalInsurance: number; // Medical insurance premium
   donations: number;
 }
 
@@ -23,6 +24,7 @@ export interface TaxInput {
   fiscalYear: string;
   taxpayerType: TaxpayerType;
   contributingSSF: boolean; // makes first 1% slab become 0%
+  isFemaleOnlyRemuneration: boolean; // applies 10% tax credit on slab tax
   months: number; // months used for the period (default 12)
   income: IncomeInput;
   deductions: DeductionInput;
@@ -56,6 +58,14 @@ export interface SlabComputation {
   taxInBracket: number;
 }
 
+export interface DeductionComputation {
+  key: "retirement" | "lifeInsurance" | "medicalInsurance" | "donations";
+  label: string;
+  entered: number;
+  allowed: number;
+  capped: boolean;
+}
+
 export interface RegimeResult {
   regimeId: string;
   regimeName: string;
@@ -63,6 +73,10 @@ export interface RegimeResult {
   totalDeductions: number;
   taxableIncome: number;
   slabs: SlabComputation[];
+  deductionBreakdown: DeductionComputation[];
+  grossTaxYearly: number;
+  femaleTaxCredit: number;
+  totalCredits: number;
   totalTaxYearly: number;
   totalTaxMonthly: number;
   netIncomeYearly: number;

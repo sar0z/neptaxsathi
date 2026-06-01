@@ -76,6 +76,7 @@ const DEFAULT_INPUT: TaxInput = {
   fiscalYear: "2082/83",
   taxpayerType: "individual",
   contributingSSF: false,
+  isFemaleOnlyRemuneration: false,
   months: 12,
   income: {
     salary: 0,
@@ -88,6 +89,7 @@ const DEFAULT_INPUT: TaxInput = {
     pf: 0,
     cit: 0,
     insurance: 0,
+    medicalInsurance: 0,
     donations: 0,
   },
 };

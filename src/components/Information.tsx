@@ -150,6 +150,16 @@ export default function Information() {
         </Box>
       </Flex>
 
+      <Flex gap="3" p="3" align="start" style={{ background: "var(--blue-2)", border: "1px solid var(--blue-a4)", borderRadius: "var(--radius-3)" }}>
+        <Box style={{ fontSize: 16, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>ⓘ</Box>
+        <Box>
+          <Text size="2" weight="bold" style={{ color: "var(--blue-11)" }}>{t('allowedDeductions')}</Text>
+          <Text size="1" color="gray" style={{ lineHeight: 1.5, marginTop: 2, display: "block" }}>
+            {t('deductionCaps')} {t('femaleOnlyRemunerationNote')}
+          </Text>
+        </Box>
+      </Flex>
+
       <DeveloperInfo />
     </Flex>
   );
