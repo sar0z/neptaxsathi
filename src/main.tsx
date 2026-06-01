@@ -1,8 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { Theme } from "@radix-ui/themes";
 import "./index.css";
 import App from "./App";
+import { Theme } from "@radix-ui/themes";
 import { LanguageProvider } from "./i18n/LanguageContext";
 
 createRoot(document.getElementById("root")!).render(
