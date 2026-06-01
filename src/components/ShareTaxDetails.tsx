@@ -309,10 +309,21 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
           const computedStyle = window.getComputedStyle(el);
           originalStyles.set(el, el.getAttribute('style') || '');
           
-          // Override CSS variables with computed values
-          el.style.color = computedStyle.color;
-          el.style.backgroundColor = computedStyle.backgroundColor;
-          el.style.borderColor = computedStyle.borderColor;
+          // Override CSS variables with computed values (only if they're valid RGB/RGBA)
+          const color = computedStyle.color;
+          const bgColor = computedStyle.backgroundColor;
+          const borderColor = computedStyle.borderColor;
+          
+          // Only set if it's a valid rgb/rgba value (not a CSS variable or color function)
+          if (color && (color.startsWith('rgb') || color.startsWith('#'))) {
+            el.style.color = color;
+          }
+          if (bgColor && (bgColor.startsWith('rgb') || bgColor.startsWith('#'))) {
+            el.style.backgroundColor = bgColor;
+          }
+          if (borderColor && (borderColor.startsWith('rgb') || borderColor.startsWith('#'))) {
+            el.style.borderColor = borderColor;
+          }
         }
       });
 
