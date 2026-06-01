@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Box, Button, Dialog, Flex, Grid, Heading, Separator, Table, Text } from "@radix-ui/themes";
 import { DownloadIcon, Share1Icon } from "@radix-ui/react-icons";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import type { TaxInput, RegimeResult } from "../engine/types";
@@ -298,13 +299,46 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     window.umami?.track("tax-details-pdf-generation-started");
 
     try {
+      // Store original styles to restore later
+      const originalStyles = new Map<HTMLElement, string>();
+      
+      // Temporarily replace CSS variables with solid colors
+      const elements = printRef.current.querySelectorAll('*');
+      elements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          const computedStyle = window.getComputedStyle(el);
+          originalStyles.set(el, el.getAttribute('style') || '');
+          
+          // Override CSS variables with computed values
+          el.style.color = computedStyle.color;
+          el.style.backgroundColor = computedStyle.backgroundColor;
+          el.style.borderColor = computedStyle.borderColor;
+        }
+      });
+
       // Capture the element as canvas with high quality
       const canvas = await html2canvas(printRef.current, {
         scale: 2, // Higher quality
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
         windowWidth: 860,
+        foreignObjectRendering: false,
+        imageTimeout: 5000,
+        removeContainer: true,
+      });
+
+      // Restore original styles
+      elements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          const originalStyle = originalStyles.get(el);
+          if (originalStyle) {
+            el.setAttribute('style', originalStyle);
+          } else {
+            el.removeAttribute('style');
+          }
+        }
       });
 
       // Calculate PDF dimensions (A4 size)
@@ -359,9 +393,10 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
         <Box px="5" py="4" style={{ borderBottom: "1px solid var(--gray-a4)" }}>
           <Flex align="center" justify="between" gap="3">
             <Box>
-              <Dialog.Title>
-                <Heading size="4">{t("shareDialogTitle")}</Heading>
-              </Dialog.Title>
+              <VisuallyHidden.Root>
+                <Dialog.Title>{t("shareDialogTitle")}</Dialog.Title>
+              </VisuallyHidden.Root>
+              <Heading size="4">{t("shareDialogTitle")}</Heading>
               <Dialog.Description>
                 <Text size="2" color="gray">
                   {t("shareDialogDescription")}

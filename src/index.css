@@ -1,5 +1,6 @@
 @import "@radix-ui/themes/styles.css";
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap");
 
 @font-face {
   font-family: "Nunito";
@@ -37,38 +38,6 @@
   font-family: "Nunito";
   src: url("https://fonts.gstatic.com/s/nunito/v26/XRXV3I6Li01BKofIO-aBXso.woff2") format("woff2");
   font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjRRdLdxI9rZoWj-g9dE6Y8uCJy3Y2KPm1e3r5.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKp1e3r5.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKpVe3r5.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans Devanagari";
-  src: url("https://fonts.gstatic.com/s/notosansdevanagari/v15/PNjSdLdxI9rZoWj-g9dE6Y8uCJy3Y2vKJle3r5.woff2") format("woff2");
-  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
