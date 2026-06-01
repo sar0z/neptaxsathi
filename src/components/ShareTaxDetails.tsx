@@ -142,10 +142,15 @@ function PrintableLayout({
             <Text size="1" weight="bold" className="share-eyebrow">
               {summary.label}
             </Text>
-            <Text size="6" weight="bold" className="tnum share-main-number" as="div" style={{ marginBottom: 0 }}>
-              {npr(summary.monthlyCashInHand, language, currency)}
-            </Text>
-            <Text size="1" color="gray" as="div" style={{ marginTop: 8 }}>
+            <Flex align="baseline" gap="1" mt="1" wrap="nowrap">
+              <Text size="2" weight="bold" color="gray" style={{ flexShrink: 0, opacity: 0.7 }}>
+                {currency}
+              </Text>
+              <Text size="6" weight="bold" className="tnum" as="div" style={{ lineHeight: 1, wordBreak: "break-all" }}>
+                {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyCashInHand))}
+              </Text>
+            </Flex>
+            <Text size="1" color="gray" as="div" style={{ marginTop: 6 }}>
               {t("cashInHand")} ({t("monthly")})
             </Text>
             <Separator size="4" my="3" />
@@ -154,8 +159,9 @@ function PrintableLayout({
                 <Text size="1" color="gray" as="div">
                   {t("monthlyTax")}
                 </Text>
-                <Text size="2" weight="bold" className="tnum">
-                  {npr(summary.monthlyTax, language, currency)}
+                <Text size="2" weight="bold" className="tnum" style={{ wordBreak: "break-all" }}>
+                  <Text size="1" color="gray" style={{ opacity: 0.7 }}>{currency} </Text>
+                  {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyTax))}
                 </Text>
               </Box>
               <Box style={{ textAlign: "right" }}>
@@ -383,7 +389,7 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       // Create PDF
       const pdf = new jsPDF({
         orientation: imgHeight > pageHeight ? "portrait" : "portrait",
@@ -415,7 +421,7 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
 
       // Download the PDF
       pdf.save(filename);
-      
+
       window.umami?.track("tax-details-pdf-downloaded");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -457,20 +463,20 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
 
         <Box px="5" py="4" style={{ borderTop: "1px solid var(--gray-a4)", background: "var(--color-panel-solid)" }}>
           <Flex gap="3" justify="end" wrap="wrap">
-            <Button 
-              variant="soft" 
-              color="gray" 
-              onClick={handleShareAsImage} 
+            <Button
+              variant="soft"
+              color="gray"
+              onClick={handleShareAsImage}
               disabled={isGeneratingImage}
               style={{ cursor: isGeneratingImage ? "wait" : "pointer" }}
             >
               <Share1Icon width="16" height="16" />
               {isGeneratingImage ? t("generatingImage") : t("shareAsImage")}
             </Button>
-            <Button 
-              variant="soft" 
-              color="gray" 
-              onClick={handlePrint} 
+            <Button
+              variant="soft"
+              color="gray"
+              onClick={handlePrint}
               disabled={isGeneratingPdf}
               style={{ cursor: isGeneratingPdf ? "wait" : "pointer" }}
             >
