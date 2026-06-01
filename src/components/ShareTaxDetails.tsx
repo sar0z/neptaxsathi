@@ -57,13 +57,56 @@ function PrintableLayout({
   const { t, language } = useTranslation();
   const currency = t("currency");
   const months = safeMonths(input.months);
-  const retirementYearly = input.deductions.ssf + input.deductions.pf + input.deductions.cit;
 
-  const monthlyDeductionRows = [
-    { label: t("monthlySalary"), value: input.income.salary / months },
-    { label: t("ssf"), value: input.deductions.ssf / months },
-    { label: t("providentFund"), value: input.deductions.pf / months },
-    { label: t("cit"), value: input.deductions.cit / months },
+  const yearlyComparisonRows = [
+    {
+      label: t("incomeTax"),
+      old: summaries[0].result.totalTaxYearly,
+      new: summaries[1].result.totalTaxYearly,
+    },
+    {
+      label: t("taxableSalary"),
+      old: summaries[0].result.taxableIncome,
+      new: summaries[1].result.taxableIncome,
+    },
+  ];
+
+  const monthlyComparisonRows = [
+    {
+      label: t("monthlySalary"),
+      old: input.income.salary / months,
+      new: input.income.salary / months,
+    },
+    {
+      label: t("ssf"),
+      old: input.deductions.ssf / months,
+      new: input.deductions.ssf / months,
+    },
+    {
+      label: t("providentFund"),
+      old: input.deductions.pf / months,
+      new: input.deductions.pf / months,
+    },
+    {
+      label: t("cit"),
+      old: input.deductions.cit / months,
+      new: input.deductions.cit / months,
+    },
+    {
+      label: t("incomeTax"),
+      old: summaries[0].monthlyTax,
+      new: summaries[1].monthlyTax,
+    },
+    {
+      label: t("netSalary"),
+      old: summaries[0].result.netIncomeMonthly,
+      new: summaries[1].result.netIncomeMonthly,
+    },
+    {
+      label: t("cashInHand"),
+      old: summaries[0].monthlyCashInHand,
+      new: summaries[1].monthlyCashInHand,
+    },
   ];
 
   return (
@@ -127,37 +170,7 @@ function PrintableLayout({
 
       <Box className="share-section" mt="4">
         <Text size="2" weight="bold" as="div" mb="3">
-          {t("monthlyCashBreakdown")}
-        </Text>
-        <Table.Root variant="ghost" className="share-table">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeaderCell>{t("deductionsLabel")}</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("monthly")}</Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {monthlyDeductionRows.map((row) => (
-              <Table.Row key={row.label}>
-                <Table.Cell>{row.label}</Table.Cell>
-                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
-                  {npr(row.value, language, currency)}
-                </Table.Cell>
-              </Table.Row>
-            ))}
-            <Table.Row>
-              <Table.Cell>{t("retirementFund")} ({t("yearly")})</Table.Cell>
-              <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
-                {npr(retirementYearly, language, currency)}
-              </Table.Cell>
-            </Table.Row>
-          </Table.Body>
-        </Table.Root>
-      </Box>
-
-      <Box className="share-section" mt="3">
-        <Text size="2" weight="bold" as="div" mb="3">
-          {t("shareTaxComparison")}
+          {t("shareTaxComparison")} · {t("yearly")}
         </Text>
         <Table.Root variant="ghost" className="share-table">
           <Table.Header>
@@ -168,28 +181,35 @@ function PrintableLayout({
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {[
-              {
-                label: `${t("incomeTax")} (${t("yearly")})`,
-                old: summaries[0].result.totalTaxYearly,
-                new: summaries[1].result.totalTaxYearly,
-              },
-              {
-                label: `${t("incomeTax")} (${t("monthly")})`,
-                old: summaries[0].monthlyTax,
-                new: summaries[1].monthlyTax,
-              },
-              {
-                label: `${t("cashInHand")} (${t("monthly")})`,
-                old: summaries[0].monthlyCashInHand,
-                new: summaries[1].monthlyCashInHand,
-              },
-              {
-                label: t("taxableSalary"),
-                old: summaries[0].result.taxableIncome,
-                new: summaries[1].result.taxableIncome,
-              },
-            ].map((row) => (
+            {yearlyComparisonRows.map((row) => (
+              <Table.Row key={row.label}>
+                <Table.Cell>{row.label}</Table.Cell>
+                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                  {npr(row.old, language, currency)}
+                </Table.Cell>
+                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                  {npr(row.new, language, currency)}
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      </Box>
+
+      <Box className="share-section" mt="3">
+        <Text size="2" weight="bold" as="div" mb="3">
+          {t("shareTaxComparison")} · {t("monthly")}
+        </Text>
+        <Table.Root variant="ghost" className="share-table">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("oldSlab")}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("newSlab")}</Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {monthlyComparisonRows.map((row) => (
               <Table.Row key={row.label}>
                 <Table.Cell>{row.label}</Table.Cell>
                 <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
@@ -271,13 +291,35 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     const markup = printRef.current?.innerHTML;
     if (!markup) return;
 
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=900,height=1100");
-    if (!printWindow) {
-      window.print();
-      return;
-    }
+    const printFrame = document.createElement("iframe");
+    printFrame.style.position = "fixed";
+    printFrame.style.right = "0";
+    printFrame.style.bottom = "0";
+    printFrame.style.width = "0";
+    printFrame.style.height = "0";
+    printFrame.style.border = "0";
+    printFrame.style.visibility = "hidden";
 
-    printWindow.document.write(`
+    const cleanup = () => {
+      setTimeout(() => {
+        printFrame.remove();
+      }, 500);
+    };
+
+    printFrame.onload = () => {
+      const frameWindow = printFrame.contentWindow;
+      if (!frameWindow) {
+        cleanup();
+        return;
+      }
+
+      frameWindow.onafterprint = cleanup;
+      frameWindow.focus();
+      frameWindow.print();
+      window.umami?.track("tax-details-pdf-opened");
+    };
+
+    printFrame.srcdoc = `
       <!doctype html>
       <html>
         <head>
@@ -301,11 +343,8 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
         </head>
         <body>${markup}</body>
       </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    window.umami?.track("tax-details-pdf-opened");
+    `;
+    document.body.appendChild(printFrame);
   };
 
   return (
