@@ -1,6 +1,8 @@
 import { Flex, Box, Text } from "@radix-ui/themes";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export default function DeveloperInfo() {
+  const { t } = useTranslation();
   return (
     <Box
       style={{
@@ -49,7 +51,7 @@ export default function DeveloperInfo() {
         </Box>
         <Box>
           <Text size="1" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
-            Developed By
+            {t('developedBy')}
           </Text>
           <Text size="2" weight="bold" style={{ color: "var(--gray-12)" }}>
             Saugat Jonchhen

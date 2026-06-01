@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Flex, Box, Button, Text, Dialog } from "@radix-ui/themes";
 import { evaluateExpression } from "../utils/math";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface CalculatorProps {
   open: boolean;
@@ -10,8 +11,30 @@ interface CalculatorProps {
 }
 
 export default function Calculator({ open, onOpenChange, onResult, initialValue = 0 }: CalculatorProps) {
+  const { t, language } = useTranslation();
   const [display, setDisplay] = useState("0");
   const [expression, setExpression] = useState("");
+
+  const convertToDevanagari = (str: string): string => {
+    const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+    return str.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+  };
+
+  const formatDisplay = (val: string): string => {
+    if (language === 'ne') {
+      if (val === "Error") return "त्रुटि";
+      return convertToDevanagari(val);
+    }
+    return val;
+  };
+
+  const translateButtonLabel = (btn: string) => {
+    if (language === 'ne') {
+      const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+      return btn.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+    }
+    return btn;
+  };
 
   // Update display when initialValue changes or when modal opens
   useEffect(() => {
@@ -230,7 +253,7 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
                   <path d="M6 6h2M6 10h2M6 14h2M10 6h4M10 10h4M10 14h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </Box>
-              <Text weight="bold" size="3" style={{ color: "var(--gray-12)" }}>Smart Calculator</Text>
+              <Text weight="bold" size="3" style={{ color: "var(--gray-12)" }}>{t('calculator')}</Text>
             </Flex>
             <Dialog.Close>
               <Button variant="ghost" color="gray" size="1" style={{ borderRadius: "50%", padding: 4 }}>
@@ -257,20 +280,20 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
           >
             {expression ? (
               <Text size="2" color="gray" mb="1" className="tnum" style={{ opacity: 0.8, letterSpacing: "0.05em" }}>
-                {expression}
+                {formatDisplay(expression)}
               </Text>
             ) : (
               <Box style={{ height: 18 }} />
             )}
             <Text size="7" weight="bold" className="tnum" style={{ wordBreak: "break-all", color: "var(--gray-12)", letterSpacing: "-0.02em" }}>
-              {display}
+              {formatDisplay(display)}
             </Text>
           </Box>
 
           {/* Keyboard Hint */}
           <Flex justify="center" mb="3">
             <Text size="1" color="gray" style={{ fontSize: 10, opacity: 0.6, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              Keyboard enabled (0-9, +, -, *, /, Backspace, Enter, Esc)
+              {t('keyboardEnabled')}
             </Text>
           </Flex>
 
@@ -312,7 +335,7 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
                         else handleNumber(btn);
                       }}
                     >
-                      {btn}
+                      {translateButtonLabel(btn)}
                     </button>
                   );
                 })}
@@ -329,7 +352,7 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
                 size="3"
                 style={{ width: "100%", borderRadius: "var(--radius-3)" }}
               >
-                Cancel
+                {t('cancel')}
               </Button>
             </Dialog.Close>
             <Button
@@ -339,7 +362,7 @@ export default function Calculator({ open, onOpenChange, onResult, initialValue 
               onClick={handleApply}
               disabled={display === "Error"}
             >
-              Apply Value [A]
+              {t('applyValue')}
             </Button>
           </Flex>
         </Box>
