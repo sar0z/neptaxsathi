@@ -1,6 +1,8 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Box, Button, Dialog, Flex, Grid, Heading, Separator, Table, Text } from "@radix-ui/themes";
 import { DownloadIcon, Share1Icon } from "@radix-ui/react-icons";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import type { TaxInput, RegimeResult } from "../engine/types";
 import { calculateRegime, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
@@ -96,10 +98,10 @@ function PrintableLayout({
             <Text size="1" weight="bold" className="share-eyebrow">
               {summary.label}
             </Text>
-            <Text size="6" weight="bold" className="tnum share-main-number" as="div">
+            <Text size="6" weight="bold" className="tnum share-main-number" as="div" style={{ marginBottom: 0 }}>
               {npr(summary.monthlyCashInHand, language, currency)}
             </Text>
-            <Text size="1" color="gray" as="div">
+            <Text size="1" color="gray" as="div" style={{ marginTop: 8 }}>
               {t("cashInHand")} ({t("monthly")})
             </Text>
             <Separator size="4" my="3" />
@@ -267,45 +269,68 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     }
   };
 
-  const handlePrint = () => {
-    const markup = printRef.current?.innerHTML;
-    if (!markup) return;
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=900,height=1100");
-    if (!printWindow) {
-      window.print();
-      return;
+  const handlePrint = async () => {
+    if (!printRef.current || isGeneratingPdf) return;
+
+    setIsGeneratingPdf(true);
+    window.umami?.track("tax-details-pdf-generation-started");
+
+    try {
+      // Capture the element as canvas with high quality
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: 860,
+      });
+
+      // Calculate PDF dimensions (A4 size)
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: imgHeight > pageHeight ? "portrait" : "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // Add image to PDF
+      const imgData = canvas.toDataURL("image/png");
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if content is longer than one page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Generate filename with date
+      const date = new Date().toISOString().split("T")[0];
+      const taxpayerType = input.taxpayerType === "couple" ? "Couple" : "Individual";
+      const filename = `Nepal_Tax_Report_${taxpayerType}_${date}.pdf`;
+
+      // Download the PDF
+      pdf.save(filename);
+      
+      window.umami?.track("tax-details-pdf-downloaded");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      window.umami?.track("tax-details-pdf-error");
+    } finally {
+      setIsGeneratingPdf(false);
     }
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>${t("sharePreviewTitle")}</title>
-          <style>
-            body { margin: 0; background: #f8fafc; color: #0f172a; font-family: Arial, sans-serif; }
-            .share-sheet { max-width: 760px; margin: 0 auto; padding: 28px; background: #fff; }
-            .share-header, .rt-Flex { display: flex; justify-content: space-between; gap: 16px; }
-            .rt-Grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-            .share-regime, .share-section { border: 1px solid #d7dee8; border-radius: 12px; padding: 16px; background: #fff; }
-            .share-regime-indigo { border-color: #b7c7ff; background: #f5f7ff; }
-            .share-regime-teal { border-color: #9fd8cf; background: #f0fdfa; }
-            .share-eyebrow { text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-size: 11px; }
-            .share-main-number { font-size: 30px; margin: 8px 0 2px; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; }
-            th, td { padding: 10px 8px; border-top: 1px solid #e2e8f0; }
-            th { color: #475569; text-align: left; }
-            .tnum { font-variant-numeric: tabular-nums; }
-            @media print { body { background: #fff; } .share-sheet { padding: 0; } }
-          </style>
-        </head>
-        <body>${markup}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    window.umami?.track("tax-details-pdf-opened");
   };
 
   return (
@@ -339,9 +364,15 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
 
         <Box px="5" py="4" style={{ borderTop: "1px solid var(--gray-a4)", background: "var(--color-panel-solid)" }}>
           <Flex gap="3" justify="end" wrap="wrap">
-            <Button variant="soft" color="gray" onClick={handlePrint} style={{ cursor: "pointer" }}>
+            <Button 
+              variant="soft" 
+              color="gray" 
+              onClick={handlePrint} 
+              disabled={isGeneratingPdf}
+              style={{ cursor: isGeneratingPdf ? "wait" : "pointer" }}
+            >
               <DownloadIcon width="16" height="16" />
-              {t("downloadPdf")}
+              {isGeneratingPdf ? t("generatingPdf") : t("downloadPdf")}
             </Button>
             <Button color="indigo" onClick={handleShare} style={{ cursor: "pointer" }}>
               <Share1Icon width="16" height="16" />
