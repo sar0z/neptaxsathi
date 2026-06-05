@@ -89,12 +89,12 @@ function MoneyRow({
 }) {
   return (
     <label>
-      <Flex align="center" justify="between" gap="3">
-        <Text size="2" color="gray" style={{ opacity: disabled ? 0.5 : 1 }}>
+      <Flex align="center" justify="between" gap="3" wrap="wrap">
+        <Text size="2" color="gray" style={{ opacity: disabled ? 0.5 : 1, minWidth: 100, flex: 1 }}>
           {label}
         </Text>
         <Flex align="center" gap="2" style={{ flexShrink: 0 }}>
-          <Box style={{ width: 200 }}>
+          <Box style={{ width: suffix ? 180 : 200 }}>
             <TextField.Root
               type="text"
               inputMode="decimal"
@@ -488,29 +488,53 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                 {input.useVariableDeductions && (
                   <Box
                     p="1"
-                    mb="1"
+                    mb="3"
                     style={{
-                      background: "var(--gray-3)",
+                      background: "var(--gray-2)",
                       border: "1px solid var(--gray-a4)",
                       borderRadius: "var(--radius-3)",
                     }}
                   >
                     <Flex gap="1">
-                      {(['salary', 'ssf', 'pf', 'cit'] as const).map((tb) => (
-                        <Button
-                          key={tb}
-                          variant={activeTab === tb ? "solid" : "ghost"}
-                          color={activeTab === tb ? "indigo" : "gray"}
-                          onClick={() => {
-                            setActiveTab(tb);
-                            setQuickFillVal("");
-                          }}
-                          style={{ flex: 1, cursor: "pointer", fontSize: 11, padding: "4px 8px" }}
-                          size="1"
-                        >
-                          {tb === 'salary' ? (t('salaryInputLabel') || 'Salary') : tb.toUpperCase()}
-                        </Button>
-                      ))}
+                      {(['salary', 'ssf', 'pf', 'cit'] as const).map((tb) => {
+                        const isActive = activeTab === tb;
+                        const isDisabled = tb === 'ssf' && !input.contributingSSF;
+                        return (
+                          <Box
+                            key={tb}
+                            onClick={isDisabled ? undefined : () => {
+                              setActiveTab(tb);
+                              setQuickFillVal("");
+                            }}
+                            style={{
+                              flex: 1,
+                              textAlign: "center",
+                              padding: "8px 4px",
+                              borderRadius: "var(--radius-2)",
+                              cursor: isDisabled ? "not-allowed" : "pointer",
+                              background: isActive ? "var(--color-panel-solid)" : "transparent",
+                              border: isActive ? "1px solid var(--indigo-a4)" : "1px solid transparent",
+                              boxShadow: isActive ? "0 1px 4px var(--indigo-a2)" : "none",
+                              transition: "all 0.15s ease",
+                              opacity: isDisabled ? 0.35 : 1,
+                            }}
+                          >
+                            <Text
+                              size="1"
+                              weight="bold"
+                              style={{
+                                color: isActive ? "var(--indigo-11)" : "var(--gray-11)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                                display: "block",
+                                fontSize: "10px",
+                              }}
+                            >
+                              {tb === 'salary' ? (t('salaryInputLabel') || 'Salary') : tb.toUpperCase()}
+                            </Text>
+                          </Box>
+                        );
+                      })}
                     </Flex>
                   </Box>
                 )}
@@ -538,6 +562,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                       onChange={(e) => setQuickFillVal(e.target.value)}
                       size="2"
                       radius="medium"
+                      disabled={activeTab === 'ssf' && !input.contributingSSF}
                     >
                       <TextField.Slot>
                         <Text size="1" color="gray">{t('currency')}</Text>
@@ -549,6 +574,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                     onClick={handleQuickFill}
                     color="indigo"
                     style={{ cursor: "pointer" }}
+                    disabled={activeTab === 'ssf' && !input.contributingSSF}
                   >
                     {t('applyToAll') || 'Apply'}
                   </Button>
@@ -587,7 +613,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                         <Text size="2" color="gray" style={{ minWidth: 70 }}>
                           {t(mKey)}
                         </Text>
-                        <Box style={{ flex: 1, maxWidth: 120 }}>
+                        <Box style={{ flex: 1, minWidth: 80 }}>
                           <TextField.Root
                             type="text"
                             inputMode="decimal"
@@ -600,11 +626,19 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                             onChange={(e) => handleFieldChange(parseFormattedNumber(e.target.value))}
                             style={{ textAlign: "right" }}
                             className="tnum"
+                            disabled={activeTab === 'ssf' && !input.contributingSSF}
                           >
                             <TextField.Slot side="right">
                               <Box
-                                onClick={() => openCalculator(secName, idx, val)}
-                                style={{ cursor: "pointer", opacity: 0.6, display: "flex", alignItems: "center", padding: "2px 4px", borderRadius: "var(--radius-1)" }}
+                                onClick={(activeTab === 'ssf' && !input.contributingSSF) ? undefined : () => openCalculator(secName, idx, val)}
+                                style={{
+                                  cursor: (activeTab === 'ssf' && !input.contributingSSF) ? "not-allowed" : "pointer",
+                                  opacity: (activeTab === 'ssf' && !input.contributingSSF) ? 0.3 : 0.6,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "2px 4px",
+                                  borderRadius: "var(--radius-1)"
+                                }}
                               >
                                 <CalcIcon />
                               </Box>
@@ -664,6 +698,9 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                   size="3"
                   onCheckedChange={(v) => {
                     setInput((p) => ({ ...p, contributingSSF: v }));
+                    if (!v && activeTab === 'ssf') {
+                      setActiveTab('salary');
+                    }
                   }}
                 />
               </label>
@@ -710,14 +747,14 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <MoneyRow
               label={t('ssf')}
               value={
-                input.useVariableDeductions
+                (input.useVariableSalary && input.useVariableDeductions)
                   ? (input.monthlySSF || Array(12).fill(0)).reduce((sum, v) => sum + (v || 0), 0)
                   : input.deductions.ssf
               }
               onChange={(v) => setDed("ssf", v)}
-              disabled={input.useVariableDeductions}
-              onCalculator={input.useVariableDeductions ? undefined : () => openCalculator('deductions', 'ssf')}
-              suffix={input.useVariableDeductions ? "Total (computed)" : t('perYear')}
+              disabled={(input.useVariableSalary && input.useVariableDeductions) || !input.contributingSSF}
+              onCalculator={() => openCalculator('deductions', 'ssf')}
+              suffix={(input.useVariableSalary && input.useVariableDeductions) ? "Total (computed)" : t('perYear')}
               currency={t('currency')}
               language={language}
             />
@@ -726,14 +763,14 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <MoneyRow
               label={t('providentFund')}
               value={
-                input.useVariableDeductions
+                (input.useVariableSalary && input.useVariableDeductions)
                   ? (input.monthlyPF || Array(12).fill(0)).reduce((sum, v) => sum + (v || 0), 0)
                   : input.deductions.pf
               }
               onChange={(v) => setDed("pf", v)}
-              disabled={input.useVariableDeductions}
-              onCalculator={input.useVariableDeductions ? undefined : () => openCalculator('deductions', 'pf')}
-              suffix={input.useVariableDeductions ? "Total (computed)" : t('perYear')}
+              disabled={input.useVariableSalary && input.useVariableDeductions}
+              onCalculator={() => openCalculator('deductions', 'pf')}
+              suffix={(input.useVariableSalary && input.useVariableDeductions) ? "Total (computed)" : t('perYear')}
               currency={t('currency')}
               language={language}
             />
@@ -742,14 +779,14 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <MoneyRow
               label={t('cit')}
               value={
-                input.useVariableDeductions
+                (input.useVariableSalary && input.useVariableDeductions)
                   ? (input.monthlyCIT || Array(12).fill(0)).reduce((sum, v) => sum + (v || 0), 0)
                   : input.deductions.cit
               }
               onChange={(v) => setDed("cit", v)}
-              disabled={input.useVariableDeductions}
-              onCalculator={input.useVariableDeductions ? undefined : () => openCalculator('deductions', 'cit')}
-              suffix={input.useVariableDeductions ? "Total (computed)" : t('perYear')}
+              disabled={input.useVariableSalary && input.useVariableDeductions}
+              onCalculator={() => openCalculator('deductions', 'cit')}
+              suffix={(input.useVariableSalary && input.useVariableDeductions) ? "Total (computed)" : t('perYear')}
               currency={t('currency')}
               language={language}
             />

@@ -286,7 +286,7 @@ export default function App() {
           <Flex style={{ flex: 1, overflow: "hidden" }}>
             <Box
               style={{
-                width: 440,
+                width: 500,
                 flexShrink: 0,
                 borderRight: "1px solid var(--gray-a4)",
                 background: "var(--gray-1)",
