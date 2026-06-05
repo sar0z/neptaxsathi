@@ -139,3 +139,99 @@ assert.equal(
 }
 
 console.log("taxEngine tests passed");
+
+// ============================================================
+// Variable Salary Mode Tests
+// ============================================================
+import { calculateMonthlyBreakdown } from "../src/engine/taxEngine";
+
+// Test: totalIncome sums monthly salaries correctly when useVariableSalary is true
+{
+  const monthlySalaries = Array(12).fill(100_000); // 12 x 100k = 1,200,000
+  const varInput = input({
+    useVariableSalary: true,
+    monthlySalaries,
+    income: { salary: 0, bonus: 0, allowance: 0, otherIncome: 0 },
+  } as any);
+  const r = result(varInput);
+  assert.equal(r.totalIncome, 1_200_000, "variable salary: totalIncome should sum monthlySalaries");
+}
+
+// Test: Monthly breakdown outputs exactly 12 months
+{
+  const monthlySalaries = Array(12).fill(80_000);
+  const varInput = input({ useVariableSalary: true, monthlySalaries } as any);
+  const bd = calculateMonthlyBreakdown(varInput as any, oldRegime);
+  assert.equal(bd.months.length, 12, "monthly breakdown should have exactly 12 months");
+}
+
+// Test: Uniform salary — all monthly TDS should be equal
+{
+  const monthlySalaries = Array(12).fill(100_000);
+  const varInput = input({ useVariableSalary: true, monthlySalaries } as any);
+  const bd = calculateMonthlyBreakdown(varInput as any, oldRegime);
+  const allEqual = bd.months.every((m) => Math.abs(m.taxDeducted - bd.months[0].taxDeducted) < 1);
+  assert.ok(allEqual, "uniform salary: all monthly TDS should be approximately equal");
+}
+
+// Test: Raise in Magh (month index 6) → TDS from Magh onwards should be >= TDS in Shrawan
+{
+  const salaries = Array(12).fill(100_000);
+  salaries[6] = 150_000;  // Magh raise
+  salaries[7] = 150_000;
+  salaries[8] = 150_000;
+  salaries[9] = 150_000;
+  salaries[10] = 150_000;
+  salaries[11] = 150_000;
+  const varInput = input({ useVariableSalary: true, monthlySalaries: salaries } as any);
+  const bd = calculateMonthlyBreakdown(varInput as any, oldRegime);
+  const tdsBeforeRaise = bd.months[5].taxDeducted; // Poush (last month before raise)
+  const tdsAtRaise = bd.months[6].taxDeducted;     // Magh (first month with raise)
+  assert.ok(
+    tdsAtRaise >= tdsBeforeRaise,
+    `TDS at raise (${tdsAtRaise}) should be >= TDS before raise (${tdsBeforeRaise})`
+  );
+}
+
+// Test: Sum of monthly TDS approximately equals final projected annual tax
+{
+  const monthlySalaries = Array(12).fill(120_000);
+  const varInput = input({ useVariableSalary: true, monthlySalaries } as any);
+  const bd = calculateMonthlyBreakdown(varInput as any, oldRegime);
+  const totalTds = bd.yearlyTaxDeducted;
+  const annualTax = bd.yearlyActualTax;
+  assert.ok(
+    Math.abs(totalTds - annualTax) < 2,
+    `Total TDS (${totalTds}) should approximate annual tax (${annualTax})`
+  );
+}
+
+// Test: Bonus and allowance are excluded from monthly netCashInHand calculation in 12-month mode
+{
+  const monthlySalaries = Array(12).fill(100_000);
+  const inputWithoutBonus = input({
+    useVariableSalary: true,
+    monthlySalaries,
+    income: { salary: 0, bonus: 0, allowance: 0, otherIncome: 0 }
+  } as any);
+  const inputWithBonus = input({
+    useVariableSalary: true,
+    monthlySalaries,
+    income: { salary: 0, bonus: 120_000, allowance: 60_000, otherIncome: 0 }
+  } as any);
+
+  const bdWithout = calculateMonthlyBreakdown(inputWithoutBonus as any, oldRegime);
+  const bdWith = calculateMonthlyBreakdown(inputWithBonus as any, oldRegime);
+
+  for (let m = 0; m < 12; m++) {
+    const cashDiff = bdWithout.months[m].netCashInHand - bdWith.months[m].netCashInHand;
+    const taxDiff = bdWith.months[m].taxDeducted - bdWithout.months[m].taxDeducted;
+    assert.ok(
+      Math.abs(cashDiff - taxDiff) < 1,
+      `Month ${m}: Cash difference (${cashDiff}) should match tax difference (${taxDiff})`
+    );
+  }
+}
+
+console.log("variable salary tests passed");
+

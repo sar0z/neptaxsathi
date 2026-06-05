@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Flex, Text, Heading, Box, Button, Table, Grid, Badge } from "@radix-ui/themes";
 import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon, Share1Icon } from "@radix-ui/react-icons";
 import type { TaxInput } from "../engine/types";
-import { calculateRegime, npr } from "../engine/taxEngine";
+import { calculateRegime, calculateMonthlyBreakdown, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import RegimeView from "./RegimeView";
 import { useIsDesktop } from "../hooks/useIsDesktop";
@@ -19,8 +19,19 @@ export default function Calculation({ input, onBack }: Props) {
   const currency = t('currency');
   const isDesktop = useIsDesktop();
   const [shareOpen, setShareOpen] = useState(false);
+  const [breakdownRegime, setBreakdownRegime] = useState<'old' | 'new'>('old');
   const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
   const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
+
+  const oldMonthly = useMemo(
+    () => input.useVariableSalary ? calculateMonthlyBreakdown(input, oldRegime) : null,
+    [input]
+  );
+  const newMonthly = useMemo(
+    () => input.useVariableSalary ? calculateMonthlyBreakdown(input, newRegime) : null,
+    [input]
+  );
+  const activeMonthly = breakdownRegime === 'old' ? oldMonthly : newMonthly;
 
   const savingsYearly = oldResult.totalTaxYearly - newResult.totalTaxYearly;
   const savingsMonthly = oldResult.totalTaxMonthly - newResult.totalTaxMonthly;
@@ -36,21 +47,21 @@ export default function Calculation({ input, onBack }: Props) {
   const oldSlabsInfo: [string, string][] =
     input.taxpayerType === "couple"
       ? [
-          [`${t('upTo')} 6,00,000`, "1% (0% SSF)"],
-          ["6L – 8L", "10%"],
-          ["8L – 11L", "20%"],
-          ["11L – 20L", "30%"],
-          ["20L – 50L", "36%"],
-          [`${t('above')} 50L`, "39%"],
-        ]
+        [`${t('upTo')} 6,00,000`, "1% (0% SSF)"],
+        ["6L – 8L", "10%"],
+        ["8L – 11L", "20%"],
+        ["11L – 20L", "30%"],
+        ["20L – 50L", "36%"],
+        [`${t('above')} 50L`, "39%"],
+      ]
       : [
-          [`${t('upTo')} 5,00,000`, "1% (0% SSF)"],
-          ["5L – 7L", "10%"],
-          ["7L – 10L", "20%"],
-          ["10L – 20L", "30%"],
-          ["20L – 50L", "36%"],
-          [`${t('above')} 50L`, "39%"],
-        ];
+        [`${t('upTo')} 5,00,000`, "1% (0% SSF)"],
+        ["5L – 7L", "10%"],
+        ["7L – 10L", "20%"],
+        ["10L – 20L", "30%"],
+        ["20L – 50L", "36%"],
+        [`${t('above')} 50L`, "39%"],
+      ];
 
   const newSlabsInfo: [string, string][] = [
     [`${t('upTo')} 10,00,000`, "1% (0% SSF)"],
@@ -73,7 +84,7 @@ export default function Calculation({ input, onBack }: Props) {
     { label: t('incomeTax'), old: oldResult.totalTaxYearly, new: newResult.totalTaxYearly },
     { label: t('effectiveRate'), old: oldResult.effectiveRate * 100, new: newResult.effectiveRate * 100, isPercent: true },
     { label: t('netSalary'), old: oldResult.netIncomeYearly, new: newResult.netIncomeYearly },
-    { label: t('cashInHand'), old: input.income.salary - oldResult.totalTaxYearly - retirementYearly, new: input.income.salary - newResult.totalTaxYearly - retirementYearly },
+    { label: t('cashInHand'), old: oldResult.totalIncome - oldResult.totalTaxYearly - retirementYearly, new: newResult.totalIncome - newResult.totalTaxYearly - retirementYearly },
   ];
 
   const monthlyTableRows = [
@@ -226,9 +237,9 @@ export default function Calculation({ input, onBack }: Props) {
           neutral
             ? undefined
             : {
-                background: `linear-gradient(135deg, var(--${accent}-3), var(--${accent}-2))`,
-                borderColor: `var(--${accent}-a5)`,
-              }
+              background: `linear-gradient(135deg, var(--${accent}-3), var(--${accent}-2))`,
+              borderColor: `var(--${accent}-a5)`,
+            }
         }
       >
         {neutral ? (
@@ -347,7 +358,7 @@ export default function Calculation({ input, onBack }: Props) {
               }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2v12M4 6l4-4 4 4M3 14h10" stroke="var(--green-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 2v12M4 6l4-4 4 4M3 14h10" stroke="var(--green-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Box>
           </Flex>
@@ -397,8 +408,8 @@ export default function Calculation({ input, onBack }: Props) {
               }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM3 6a5 5 0 1110 0A5 5 0 013 6z" stroke="var(--blue-11)" strokeWidth="1.5"/>
-                <path d="M8 8v5M6 11l2 2 2-2" stroke="var(--blue-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 2.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM3 6a5 5 0 1110 0A5 5 0 013 6z" stroke="var(--blue-11)" strokeWidth="1.5" />
+                <path d="M8 8v5M6 11l2 2 2-2" stroke="var(--blue-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Box>
           </Flex>
@@ -448,7 +459,7 @@ export default function Calculation({ input, onBack }: Props) {
               }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 14V2M4 10l4 4 4-4M3 2h10" stroke="var(--red-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 14V2M4 10l4 4 4-4M3 2h10" stroke="var(--red-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Box>
           </Flex>
@@ -498,7 +509,7 @@ export default function Calculation({ input, onBack }: Props) {
               }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2v12M4 6l4-4 4 4M3 14h10" stroke="var(--purple-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 2v12M4 6l4-4 4 4M3 14h10" stroke="var(--purple-11)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Box>
           </Flex>
@@ -548,9 +559,9 @@ export default function Calculation({ input, onBack }: Props) {
               }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="10" width="3" height="4" rx="1" fill="var(--indigo-11)"/>
-                <rect x="6.5" y="6" width="3" height="8" rx="1" fill="var(--indigo-11)" opacity="0.7"/>
-                <rect x="11" y="2" width="3" height="12" rx="1" fill="var(--indigo-11)" opacity="0.5"/>
+                <rect x="2" y="10" width="3" height="4" rx="1" fill="var(--indigo-11)" />
+                <rect x="6.5" y="6" width="3" height="8" rx="1" fill="var(--indigo-11)" opacity="0.7" />
+                <rect x="11" y="2" width="3" height="12" rx="1" fill="var(--indigo-11)" opacity="0.5" />
               </svg>
             </Box>
           </Flex>
@@ -612,6 +623,224 @@ export default function Calculation({ input, onBack }: Props) {
         </Table.Root>
       </Box>
 
+      {/* ===== 12-Month Variable Salary Breakdown ===== */}
+      {input.useVariableSalary && activeMonthly && (
+        <Flex direction="column" gap="3">
+
+          {/* Section Header + Slab Switcher */}
+          <Flex align="center" justify="between" wrap="wrap" gap="3">
+            <Box>
+              <Heading size="4" as="h3" mb="1">{t('monthlyBreakdownTitle')}</Heading>
+              <Text size="2" color="gray">{t('monthlyBreakdownSubtitle')}</Text>
+            </Box>
+            <Flex
+              gap="1"
+              style={{
+                background: "var(--gray-2)",
+                border: "1px solid var(--gray-a4)",
+                borderRadius: "var(--radius-3)",
+                padding: 4,
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                onClick={() => setBreakdownRegime('old')}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: "var(--radius-2)",
+                  background: breakdownRegime === 'old' ? "var(--color-panel-solid)" : "transparent",
+                  border: breakdownRegime === 'old' ? "1px solid var(--indigo-a4)" : "1px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow: breakdownRegime === 'old' ? "0 1px 3px var(--indigo-a2)" : "none",
+                }}
+              >
+                <Flex align="center" gap="1.5">
+                  <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--indigo-9)", flexShrink: 0 }} />
+                  <Text size="1" weight={breakdownRegime === 'old' ? "bold" : "medium"} style={{ color: breakdownRegime === 'old' ? "var(--indigo-11)" : "var(--gray-11)" }}>
+                    {t('oldSlab')}
+                  </Text>
+                </Flex>
+              </Box>
+              <Box
+                onClick={() => setBreakdownRegime('new')}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: "var(--radius-2)",
+                  background: breakdownRegime === 'new' ? "var(--color-panel-solid)" : "transparent",
+                  border: breakdownRegime === 'new' ? "1px solid var(--teal-a4)" : "1px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow: breakdownRegime === 'new' ? "0 1px 3px var(--teal-a2)" : "none",
+                }}
+              >
+                <Flex align="center" gap="1.5">
+                  <Box style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--teal-9)", flexShrink: 0 }} />
+                  <Text size="1" weight={breakdownRegime === 'new' ? "bold" : "medium"} style={{ color: breakdownRegime === 'new' ? "var(--teal-11)" : "var(--gray-11)" }}>
+                    {t('newSlab')}
+                  </Text>
+                </Flex>
+              </Box>
+            </Flex>
+          </Flex>
+
+          {/* Monthly Breakdown Table */}
+          <Box style={{ background: 'var(--gray-1)', border: '1px solid var(--gray-a4)', borderRadius: 'var(--radius-4)', overflow: 'hidden' }}>
+            <Box style={{ overflowX: 'auto' }}>
+              <Table.Root variant="ghost" style={{ border: 'none', width: '100%', minWidth: 560 }}>
+                <Table.Header>
+                  <Table.Row style={{ background: breakdownRegime === 'old' ? 'var(--indigo-3)' : 'var(--teal-3)' }}>
+                    {[
+                      t('month') || 'Month',
+                      t('monthlySalary'),
+                      t('ssf'),
+                      t('providentFund'),
+                      t('cit'),
+                      t('tdsDeducted'),
+                      t('netCashInHand'),
+                    ].map((col, ci) => (
+                      <Table.ColumnHeaderCell
+                        key={ci}
+                        style={{
+                          padding: '8px 12px',
+                          textAlign: ci === 0 ? 'left' : 'right',
+                          fontWeight: 700,
+                          fontSize: 11,
+                          letterSpacing: '0.05em',
+                          color: breakdownRegime === 'old' ? 'var(--indigo-11)' : 'var(--teal-11)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {col}
+                      </Table.ColumnHeaderCell>
+                    ))}
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {activeMonthly.months.map((m, i) => {
+                    const monthName = language === 'ne' ? m.monthNameNe : m.monthNameEn;
+                    const prevSalary = i > 0 ? activeMonthly.months[i - 1].salary : null;
+                    const salaryChanged = prevSalary !== null && m.salary !== prevSalary;
+                    return (
+                      <Table.Row
+                        key={m.monthIndex}
+                        style={{
+                          borderTop: '1px solid var(--gray-a3)',
+                          background: salaryChanged
+                            ? breakdownRegime === 'old' ? 'var(--indigo-2)' : 'var(--teal-2)'
+                            : i % 2 === 0 ? 'var(--color-panel-solid)' : 'var(--gray-2)',
+                        }}
+                      >
+                        <Table.Cell style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--gray-12)', whiteSpace: 'nowrap' }}>
+                          <Flex align="center" gap="2">
+                            {monthName}
+                            {salaryChanged && (
+                              <Badge color={breakdownRegime === 'old' ? 'indigo' : 'teal'} variant="soft" size="1" radius="full">↑</Badge>
+                            )}
+                          </Flex>
+                        </Table.Cell>
+                        <Table.Cell className="tnum" style={{ padding: '9px 12px', textAlign: 'right', color: 'var(--gray-11)', fontSize: 13 }}>
+                          {npr(m.salary, language, currency)}
+                        </Table.Cell>
+                        <Table.Cell className="tnum" style={{ padding: '9px 12px', textAlign: 'right', color: 'var(--gray-11)', fontSize: 13 }}>
+                          {m.ssfContribution > 0 ? npr(m.ssfContribution, language, currency) : '—'}
+                        </Table.Cell>
+                        <Table.Cell className="tnum" style={{ padding: '9px 12px', textAlign: 'right', color: 'var(--gray-11)', fontSize: 13 }}>
+                          {m.pfContribution > 0 ? npr(m.pfContribution, language, currency) : '—'}
+                        </Table.Cell>
+                        <Table.Cell className="tnum" style={{ padding: '9px 12px', textAlign: 'right', color: 'var(--gray-11)', fontSize: 13 }}>
+                          {m.citContribution > 0 ? npr(m.citContribution, language, currency) : '—'}
+                        </Table.Cell>
+                        <Table.Cell className="tnum" style={{ padding: '9px 12px', textAlign: 'right' }}>
+                          <Box style={{
+                            display: 'inline-block',
+                            background: breakdownRegime === 'old' ? 'var(--indigo-2)' : 'var(--teal-2)',
+                            border: `1px solid ${breakdownRegime === 'old' ? 'var(--indigo-a4)' : 'var(--teal-a4)'}`,
+                            borderRadius: 'var(--radius-2)',
+                            padding: '1px 7px',
+                            color: breakdownRegime === 'old' ? 'var(--indigo-11)' : 'var(--teal-11)',
+                            fontWeight: 700,
+                            fontSize: 12,
+                          }}>
+                            {npr(m.taxDeducted, language, currency)}
+                          </Box>
+                        </Table.Cell>
+                        <Table.Cell className="tnum" style={{ padding: '9px 12px', textAlign: 'right' }}>
+                          <Box style={{
+                            display: 'inline-block',
+                            background: 'var(--green-2)',
+                            border: '1px solid var(--green-a4)',
+                            borderRadius: 'var(--radius-2)',
+                            padding: '1px 7px',
+                            color: 'var(--green-11)',
+                            fontWeight: 700,
+                            fontSize: 12,
+                          }}>
+                            {npr(m.netCashInHand, language, currency)}
+                          </Box>
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
+                </Table.Body>
+              </Table.Root>
+            </Box>
+          </Box>
+
+          {/* Reconciliation Card */}
+          <Box
+            p="4"
+            style={{
+              background: activeMonthly.refundDue > 0
+                ? 'linear-gradient(135deg, var(--green-3), var(--teal-2))'
+                : 'linear-gradient(135deg, var(--indigo-3), var(--indigo-2))',
+              border: `1px solid ${activeMonthly.refundDue > 0 ? 'var(--green-a5)' : 'var(--indigo-a5)'}`,
+              borderRadius: 'var(--radius-4)',
+            }}
+          >
+            <Text size="1" weight="bold" style={{
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: activeMonthly.refundDue > 0 ? 'var(--green-11)' : 'var(--indigo-11)',
+              display: 'block',
+              marginBottom: 10,
+            }}>
+              {t('reconciliation')}
+            </Text>
+            <Grid columns={{ initial: '1', sm: '3' }} gap="3">
+              <Box>
+                <Text size="1" color="gray" style={{ display: 'block', marginBottom: 3 }}>{t('annualTaxLiability')}</Text>
+                <Text size="4" weight="bold" className="tnum" style={{ color: 'var(--gray-12)' }}>
+                  {npr(activeMonthly.yearlyActualTax, language, currency)}
+                </Text>
+              </Box>
+              <Box>
+                <Text size="1" color="gray" style={{ display: 'block', marginBottom: 3 }}>{t('totalTdsPaid')}</Text>
+                <Text size="4" weight="bold" className="tnum" style={{ color: 'var(--gray-12)' }}>
+                  {npr(activeMonthly.yearlyTaxDeducted, language, currency)}
+                </Text>
+              </Box>
+              <Box>
+                <Text size="1" color="gray" style={{ display: 'block', marginBottom: 3 }}>
+                  {activeMonthly.refundDue > 0 ? t('refundDue') : t('incomeTax')}
+                </Text>
+                <Text size="4" weight="bold" className="tnum" style={{ color: activeMonthly.refundDue > 0 ? 'var(--green-11)' : 'var(--gray-12)' }}>
+                  {activeMonthly.refundDue > 0
+                    ? `+ ${npr(activeMonthly.refundDue, language, currency)}`
+                    : npr(Math.abs(activeMonthly.yearlyTaxDeducted - activeMonthly.yearlyActualTax), language, currency)
+                  }
+                </Text>
+              </Box>
+            </Grid>
+            {activeMonthly.refundDue > 0 && (
+              <Box mt="3" p="2" style={{ background: 'var(--green-a2)', borderRadius: 'var(--radius-3)', border: '1px solid var(--green-a3)' }}>
+                <Text size="1" color="gray" style={{ lineHeight: 1.5 }}>{t('overpaymentRefNote')}</Text>
+              </Box>
+            )}
+          </Box>
+        </Flex>
+      )}
+
       {/* Comparison Tables */}
       {renderComparisonTable(`${t('shareTaxComparison')} · ${t('yearly')}`, yearlyTableRows)}
       {renderComparisonTable(`${t('shareTaxComparison')} · ${t('monthly')}`, monthlyTableRows)}
@@ -653,6 +882,8 @@ export default function Calculation({ input, onBack }: Props) {
           />
         </Grid>
       )}
+
+
 
       {/* Back button - mobile only */}
       {!isDesktop && onBack && (

@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Select,
+  Grid,
 } from "@radix-ui/themes";
 import { PersonIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
@@ -62,8 +63,8 @@ function parseFormattedNumber(value: string): number {
 
 const CalcIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M5 5h1M5 8h1M5 11h1M8 5h3M8 8h3M8 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M5 5h1M5 8h1M5 11h1M8 5h3M8 8h3M8 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
@@ -153,10 +154,18 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
 
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calculatorTarget, setCalculatorTarget] = useState<{
-    field: keyof typeof input.income | keyof typeof input.deductions;
-    section: 'income' | 'deductions';
+    field: keyof typeof input.income | keyof typeof input.deductions | number;
+    section: 'income' | 'deductions' | 'monthlySalaries' | 'monthlySSF' | 'monthlyPF' | 'monthlyCIT';
   } | null>(null);
   const [calculatorInitialValue, setCalculatorInitialValue] = useState(0);
+
+  const [activeTab, setActiveTab] = useState<'salary' | 'ssf' | 'pf' | 'cit'>('salary');
+  const [quickFillVal, setQuickFillVal] = useState<string>("");
+
+  const MONTH_KEYS = [
+    'shrawan', 'bhadra', 'ashwin', 'kartik', 'mangsir', 'poush',
+    'magh', 'falgun', 'chaitra', 'baishakh', 'jestha', 'ashad'
+  ] as const;
 
   const setMonthlySalary = (monthly: number) => {
     const yearly = monthly * input.months;
@@ -167,13 +176,23 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
     setInput((p) => ({ ...p, income: { ...p.income, salary: yearly } }));
   };
 
-  const openCalculator = (section: 'income' | 'deductions', field: keyof typeof input.income | keyof typeof input.deductions, explicitValue?: number) => {
+  const openCalculator = (
+    section: 'income' | 'deductions' | 'monthlySalaries' | 'monthlySSF' | 'monthlyPF' | 'monthlyCIT',
+    field: keyof typeof input.income | keyof typeof input.deductions | number,
+    explicitValue?: number
+  ) => {
     setCalculatorTarget({ section, field });
-    const value = explicitValue !== undefined
-      ? explicitValue
-      : section === 'income'
-        ? input.income[field as keyof typeof input.income]
-        : input.deductions[field as keyof typeof input.deductions];
+    let value = 0;
+    if (explicitValue !== undefined) {
+      value = explicitValue;
+    } else if (section === 'income') {
+      value = input.income[field as keyof typeof input.income] || 0;
+    } else if (section === 'deductions') {
+      value = input.deductions[field as keyof typeof input.deductions] || 0;
+    } else {
+      const arr = input[section as keyof TaxInput] as number[] || Array(12).fill(0);
+      value = arr[field as number] || 0;
+    }
     setCalculatorInitialValue(value);
     setCalculatorOpen(true);
   };
@@ -182,16 +201,120 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
     if (calculatorTarget) {
       if (calculatorTarget.section === 'income') {
         setIncome(calculatorTarget.field as keyof typeof input.income, value);
-      } else {
+      } else if (calculatorTarget.section === 'deductions') {
         setDed(calculatorTarget.field as keyof typeof input.deductions, value);
+      } else {
+        const sec = calculatorTarget.section;
+        const idx = calculatorTarget.field as number;
+        setInput((p) => {
+          const arr = [...((p[sec as keyof TaxInput] as number[]) || Array(12).fill(0))];
+          arr[idx] = value;
+          return { ...p, [sec]: arr };
+        });
       }
     }
+  };
+
+  const handleQuickFill = () => {
+    const val = parseFormattedNumber(quickFillVal);
+    if (isNaN(val)) return;
+
+    if (activeTab === 'salary') {
+      setInput((p) => ({ ...p, monthlySalaries: Array(12).fill(val) }));
+    } else if (activeTab === 'ssf') {
+      setInput((p) => ({ ...p, monthlySSF: Array(12).fill(val) }));
+    } else if (activeTab === 'pf') {
+      setInput((p) => ({ ...p, monthlyPF: Array(12).fill(val) }));
+    } else if (activeTab === 'cit') {
+      setInput((p) => ({ ...p, monthlyCIT: Array(12).fill(val) }));
+    }
+    setQuickFillVal("");
   };
 
   const monthlySalary = input.income.salary / input.months;
 
   return (
     <Flex direction="column" gap="5" pb="6" className="content-fade">
+      {/* Mode Selector */}
+      <Flex direction="column" gap="2">
+        <Text size="1" weight="bold" color="gray" style={{ letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          {t('calculatorMode')}
+        </Text>
+        <Grid
+          columns="2"
+          gap="1"
+          style={{
+            background: "var(--gray-2)",
+            border: "1px solid var(--gray-a4)",
+            borderRadius: "var(--radius-4)",
+            padding: "4px",
+          }}
+        >
+          <Box
+            onClick={() => setInput((p) => ({ ...p, useVariableSalary: false }))}
+            style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-3)",
+              background: !input.useVariableSalary ? "var(--color-panel-solid)" : "transparent",
+              border: !input.useVariableSalary ? "1px solid var(--indigo-a4)" : "1px solid transparent",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              boxShadow: !input.useVariableSalary ? "0 1px 4px var(--indigo-a2)" : "none",
+            }}
+          >
+            <Flex align="center" gap="2">
+              <Box style={{ flexShrink: 0, color: !input.useVariableSalary ? "var(--indigo-11)" : "var(--gray-9)" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="1" y="2" width="10" height="2" rx="1" fill="currentColor" opacity="0.6" />
+                  <rect x="1" y="6" width="12" height="2" rx="1" fill="currentColor" />
+                  <rect x="1" y="10" width="8" height="2" rx="1" fill="currentColor" opacity="0.4" />
+                </svg>
+              </Box>
+              <Box>
+                <Text size="2" weight="bold" style={{ color: !input.useVariableSalary ? "var(--indigo-11)" : "var(--gray-11)", lineHeight: 1.2, display: "block" }}>
+                  Standard
+                </Text>
+                <Text size="1" color="gray" style={{ lineHeight: 1.2, display: "block", marginTop: 2 }}>
+                  Constant salary
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+
+          <Box
+            onClick={() => setInput((p) => ({ ...p, useVariableSalary: true }))}
+            style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-3)",
+              background: input.useVariableSalary ? "var(--color-panel-solid)" : "transparent",
+              border: input.useVariableSalary ? "1px solid var(--indigo-a4)" : "1px solid transparent",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              boxShadow: input.useVariableSalary ? "0 1px 4px var(--indigo-a2)" : "none",
+            }}
+          >
+            <Flex align="center" gap="2">
+              <Box style={{ flexShrink: 0, color: input.useVariableSalary ? "var(--indigo-11)" : "var(--gray-9)" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="1" y="10" width="2" height="3" rx="0.5" fill="currentColor" />
+                  <rect x="4.5" y="7" width="2" height="6" rx="0.5" fill="currentColor" />
+                  <rect x="8" y="4" width="2" height="9" rx="0.5" fill="currentColor" />
+                  <rect x="11.5" y="1" width="2" height="12" rx="0.5" fill="currentColor" />
+                </svg>
+              </Box>
+              <Box>
+                <Text size="2" weight="bold" style={{ color: input.useVariableSalary ? "var(--indigo-11)" : "var(--gray-11)", lineHeight: 1.2, display: "block" }}>
+                  12-Month
+                </Text>
+                <Text size="1" color="gray" style={{ lineHeight: 1.2, display: "block", marginTop: 2 }}>
+                  Variable salary
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+        </Grid>
+      </Flex>
+
       {/* Configuration */}
       <Flex direction="column" gap="3">
         <SectionLabel>{t('taxpayerType')}</SectionLabel>
@@ -260,102 +383,240 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
           }}
         >
           <Flex direction="column" gap="3">
-            {/* Monthly Salary */}
-            <label>
-              <Flex align="center" justify="between" gap="3">
-                <Text size="2" color="gray">
-                  {t('monthlySalary')}
-                </Text>
-                <Box style={{ width: 200, flexShrink: 0 }}>
-                  <TextField.Root
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9०१२३४५६७८९]*"
-                    min={0}
-                    value={formatNumberWithCommas(monthlySalary, language)}
-                    size="3"
-                    radius="large"
-                    placeholder="0"
-                    onChange={(e) => setMonthlySalary(parseFormattedNumber(e.target.value))}
-                    style={{ textAlign: "right" }}
-                    className="tnum"
-                  >
-                    <TextField.Slot>
-                      <Text size="1" color="gray">{t('currency')}</Text>
-                    </TextField.Slot>
-                    <TextField.Slot side="right">
-                      <Box
-                        onClick={() => openCalculator('income', 'salary', monthlySalary)}
-                        style={{ cursor: "pointer", opacity: 0.6, display: "flex", alignItems: "center", padding: "2px 4px", borderRadius: "var(--radius-1)" }}
+            {!input.useVariableSalary ? (
+              <>
+                {/* Monthly Salary */}
+                <label>
+                  <Flex align="center" justify="between" gap="3">
+                    <Text size="2" color="gray">
+                      {t('monthlySalary')}
+                    </Text>
+                    <Box style={{ width: 200, flexShrink: 0 }}>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(monthlySalary, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setMonthlySalary(parseFormattedNumber(e.target.value))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
                       >
-                        <CalcIcon />
-                      </Box>
-                    </TextField.Slot>
-                  </TextField.Root>
-                </Box>
-              </Flex>
-            </label>
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{t('currency')}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator('income', 'salary', monthlySalary)}
+                            style={{ cursor: "pointer", opacity: 0.6, display: "flex", alignItems: "center", padding: "2px 4px", borderRadius: "var(--radius-1)" }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </Box>
+                  </Flex>
+                </label>
 
-            {/* Months */}
-            <Flex align="center" justify="between" gap="3">
-              <Text size="2" color="gray">
-                {t('months')}
-              </Text>
-              <Box style={{ width: 200, flexShrink: 0 }}>
-                <Select.Root
-                  value={input.months.toString()}
-                  onValueChange={(v) => setInput((p) => ({ ...p, months: Number(v) }))}
-                  size="3"
-                >
-                  <Select.Trigger radius="large" style={{ width: "100%", textAlign: "right" }} />
-                  <Select.Content>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                      <Select.Item key={m} value={m.toString()}>
-                        {language === 'ne' ? convertToDevanagari(m.toString()) : m.toString()} {m === 12 ? `(${t('fullYear')})` : m === 1 ? t('month') : t('months')}
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Root>
-              </Box>
-            </Flex>
+                {/* Months */}
+                <Flex align="center" justify="between" gap="3">
+                  <Text size="2" color="gray">
+                    {t('months')}
+                  </Text>
+                  <Box style={{ width: 200, flexShrink: 0 }}>
+                    <Select.Root
+                      value={input.months.toString()}
+                      onValueChange={(v) => setInput((p) => ({ ...p, months: Number(v) }))}
+                      size="3"
+                    >
+                      <Select.Trigger radius="large" style={{ width: "100%", textAlign: "right" }} />
+                      <Select.Content>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                          <Select.Item key={m} value={m.toString()}>
+                            {language === 'ne' ? convertToDevanagari(m.toString()) : m.toString()} {m === 12 ? `(${t('fullYear')})` : m === 1 ? t('month') : t('months')}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Root>
+                  </Box>
+                </Flex>
 
-            <Box style={{ height: 1, background: "var(--gray-a3)", margin: "4px 0" }} />
+                <Box style={{ height: 1, background: "var(--gray-a3)", margin: "4px 0" }} />
 
-            {/* Yearly Salary */}
-            <label>
-              <Flex align="center" justify="between" gap="3">
-                <Text size="2" color="gray">
-                  {t('yearlySalary')}
-                </Text>
-                <Box style={{ width: 200, flexShrink: 0 }}>
-                  <TextField.Root
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9०१२३४५६७८९]*"
-                    min={0}
-                    value={formatNumberWithCommas(input.income.salary, language)}
-                    size="3"
-                    radius="large"
-                    placeholder="0"
-                    onChange={(e) => setYearlySalary(parseFormattedNumber(e.target.value))}
-                    style={{ textAlign: "right" }}
-                    className="tnum"
-                  >
-                    <TextField.Slot>
-                      <Text size="1" color="gray">{t('currency')}</Text>
-                    </TextField.Slot>
-                    <TextField.Slot side="right">
-                      <Box
-                        onClick={() => openCalculator('income', 'salary')}
-                        style={{ cursor: "pointer", opacity: 0.6, display: "flex", alignItems: "center", padding: "2px 4px", borderRadius: "var(--radius-1)" }}
+                {/* Yearly Salary */}
+                <label>
+                  <Flex align="center" justify="between" gap="3">
+                    <Text size="2" color="gray">
+                      {t('yearlySalary')}
+                    </Text>
+                    <Box style={{ width: 200, flexShrink: 0 }}>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(input.income.salary, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setYearlySalary(parseFormattedNumber(e.target.value))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
                       >
-                        <CalcIcon />
-                      </Box>
-                    </TextField.Slot>
-                  </TextField.Root>
-                </Box>
-              </Flex>
-            </label>
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{t('currency')}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator('income', 'salary')}
+                            style={{ cursor: "pointer", opacity: 0.6, display: "flex", alignItems: "center", padding: "2px 4px", borderRadius: "var(--radius-1)" }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </Box>
+                  </Flex>
+                </label>
+              </>
+            ) : (
+              <>
+                {/* Tab selector for custom monthly entries */}
+                {input.useVariableDeductions && (
+                  <Box
+                    p="1"
+                    mb="1"
+                    style={{
+                      background: "var(--gray-3)",
+                      border: "1px solid var(--gray-a4)",
+                      borderRadius: "var(--radius-3)",
+                    }}
+                  >
+                    <Flex gap="1">
+                      {(['salary', 'ssf', 'pf', 'cit'] as const).map((tb) => (
+                        <Button
+                          key={tb}
+                          variant={activeTab === tb ? "solid" : "ghost"}
+                          color={activeTab === tb ? "indigo" : "gray"}
+                          onClick={() => {
+                            setActiveTab(tb);
+                            setQuickFillVal("");
+                          }}
+                          style={{ flex: 1, cursor: "pointer", fontSize: 11, padding: "4px 8px" }}
+                          size="1"
+                        >
+                          {tb === 'salary' ? (t('salaryInputLabel') || 'Salary') : tb.toUpperCase()}
+                        </Button>
+                      ))}
+                    </Flex>
+                  </Box>
+                )}
+
+                <Text size="2" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+                  {activeTab === 'salary' && (t('enterMonthlyBasicSalary') || 'Monthly Salaries')}
+                  {activeTab === 'ssf' && (t('enterMonthlySsf') || 'Monthly SSF')}
+                  {activeTab === 'pf' && (t('enterMonthlyPf') || 'Monthly PF')}
+                  {activeTab === 'cit' && (t('enterMonthlyCit') || 'Monthly CIT')}
+                </Text>
+
+                {/* Quick Fill Base Salary */}
+                <Flex gap="2" align="center" mb="2">
+                  <Box style={{ flex: 1 }}>
+                    <TextField.Root
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9०१२३४५६७८९]*"
+                      placeholder={
+                        activeTab === 'salary'
+                          ? (t('quickFill') || 'Quick Fill Base Salary')
+                          : `Quick Fill ${activeTab.toUpperCase()}`
+                      }
+                      value={quickFillVal}
+                      onChange={(e) => setQuickFillVal(e.target.value)}
+                      size="2"
+                      radius="medium"
+                    >
+                      <TextField.Slot>
+                        <Text size="1" color="gray">{t('currency')}</Text>
+                      </TextField.Slot>
+                    </TextField.Root>
+                  </Box>
+                  <Button
+                    size="2"
+                    onClick={handleQuickFill}
+                    color="indigo"
+                    style={{ cursor: "pointer" }}
+                  >
+                    {t('applyToAll') || 'Apply'}
+                  </Button>
+                </Flex>
+
+                {/* Responsive Grid of Months */}
+                <Grid columns={{ initial: "1", xs: "2" }} gap="3" mb="1">
+                  {MONTH_KEYS.map((mKey, idx) => {
+                    let val = 0;
+                    let secName: 'monthlySalaries' | 'monthlySSF' | 'monthlyPF' | 'monthlyCIT' = 'monthlySalaries';
+
+                    if (activeTab === 'salary') {
+                      val = (input.monthlySalaries && input.monthlySalaries[idx]) || 0;
+                      secName = 'monthlySalaries';
+                    } else if (activeTab === 'ssf') {
+                      val = (input.monthlySSF && input.monthlySSF[idx]) || 0;
+                      secName = 'monthlySSF';
+                    } else if (activeTab === 'pf') {
+                      val = (input.monthlyPF && input.monthlyPF[idx]) || 0;
+                      secName = 'monthlyPF';
+                    } else if (activeTab === 'cit') {
+                      val = (input.monthlyCIT && input.monthlyCIT[idx]) || 0;
+                      secName = 'monthlyCIT';
+                    }
+
+                    const handleFieldChange = (n: number) => {
+                      setInput((p) => {
+                        const arr = [...((p[secName] as number[]) || Array(12).fill(0))];
+                        arr[idx] = n;
+                        return { ...p, [secName]: arr };
+                      });
+                    };
+
+                    return (
+                      <Flex key={mKey} align="center" justify="between" gap="2">
+                        <Text size="2" color="gray" style={{ minWidth: 70 }}>
+                          {t(mKey)}
+                        </Text>
+                        <Box style={{ flex: 1, maxWidth: 120 }}>
+                          <TextField.Root
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9०१२३४५६७८९]*"
+                            min={0}
+                            value={formatNumberWithCommas(val, language)}
+                            size="2"
+                            radius="medium"
+                            placeholder="0"
+                            onChange={(e) => handleFieldChange(parseFormattedNumber(e.target.value))}
+                            style={{ textAlign: "right" }}
+                            className="tnum"
+                          >
+                            <TextField.Slot side="right">
+                              <Box
+                                onClick={() => openCalculator(secName, idx, val)}
+                                style={{ cursor: "pointer", opacity: 0.6, display: "flex", alignItems: "center", padding: "2px 4px", borderRadius: "var(--radius-1)" }}
+                              >
+                                <CalcIcon />
+                              </Box>
+                            </TextField.Slot>
+                          </TextField.Root>
+                        </Box>
+                      </Flex>
+                    );
+                  })}
+                </Grid>
+              </>
+            )}
 
             <MoneyRow label={t('bonus')} value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyRow label={t('allowance')} value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} suffix={t('perYear')} currency={t('currency')} language={language} />
@@ -403,17 +664,96 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
                   size="3"
                   onCheckedChange={(v) => {
                     setInput((p) => ({ ...p, contributingSSF: v }));
-                    if (!v) {
-                      setDed("ssf", 0);
-                    }
                   }}
                 />
               </label>
             </Flex>
 
-            <MoneyRow label={t('ssf')} value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('providentFund')} value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            {/* Custom Monthly Deductions Toggle */}
+            {input.useVariableSalary && (
+              <Flex
+                asChild
+                align="center"
+                justify="between"
+                gap="3"
+                p="3"
+                style={{
+                  background: "var(--gray-2)",
+                  border: "1px solid var(--gray-a3)",
+                  borderRadius: "var(--radius-3)",
+                }}
+              >
+                <label>
+                  <Box>
+                    <Text as="div" size="2" weight="medium">
+                      {t('variableDeductionsToggle') || 'Custom monthly deductions'}
+                    </Text>
+                    <Text as="div" size="1" color="gray">
+                      {t('variableDeductionsToggleNote') || 'Input SSF, PF, CIT month-by-month'}
+                    </Text>
+                  </Box>
+                  <Switch
+                    checked={input.useVariableDeductions || false}
+                    size="3"
+                    onCheckedChange={(v) => {
+                      setInput((p) => ({ ...p, useVariableDeductions: v }));
+                      if (!v) {
+                        setActiveTab('salary');
+                      }
+                    }}
+                  />
+                </label>
+              </Flex>
+            )}
+
+            {/* SSF */}
+            <MoneyRow
+              label={t('ssf')}
+              value={
+                input.useVariableDeductions
+                  ? (input.monthlySSF || Array(12).fill(0)).reduce((sum, v) => sum + (v || 0), 0)
+                  : input.deductions.ssf
+              }
+              onChange={(v) => setDed("ssf", v)}
+              disabled={input.useVariableDeductions}
+              onCalculator={input.useVariableDeductions ? undefined : () => openCalculator('deductions', 'ssf')}
+              suffix={input.useVariableDeductions ? "Total (computed)" : t('perYear')}
+              currency={t('currency')}
+              language={language}
+            />
+
+            {/* Provident Fund */}
+            <MoneyRow
+              label={t('providentFund')}
+              value={
+                input.useVariableDeductions
+                  ? (input.monthlyPF || Array(12).fill(0)).reduce((sum, v) => sum + (v || 0), 0)
+                  : input.deductions.pf
+              }
+              onChange={(v) => setDed("pf", v)}
+              disabled={input.useVariableDeductions}
+              onCalculator={input.useVariableDeductions ? undefined : () => openCalculator('deductions', 'pf')}
+              suffix={input.useVariableDeductions ? "Total (computed)" : t('perYear')}
+              currency={t('currency')}
+              language={language}
+            />
+
+            {/* CIT */}
+            <MoneyRow
+              label={t('cit')}
+              value={
+                input.useVariableDeductions
+                  ? (input.monthlyCIT || Array(12).fill(0)).reduce((sum, v) => sum + (v || 0), 0)
+                  : input.deductions.cit
+              }
+              onChange={(v) => setDed("cit", v)}
+              disabled={input.useVariableDeductions}
+              onCalculator={input.useVariableDeductions ? undefined : () => openCalculator('deductions', 'cit')}
+              suffix={input.useVariableDeductions ? "Total (computed)" : t('perYear')}
+              currency={t('currency')}
+              language={language}
+            />
+
             <MoneyRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyRow label={t('medicalInsurance')} value={input.deductions.medicalInsurance} onChange={(v) => setDed("medicalInsurance", v)} onCalculator={() => openCalculator('deductions', 'medicalInsurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyRow label={t('donations')} value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix={t('perYear')} currency={t('currency')} language={language} />
@@ -454,7 +794,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
 
       {/* Calculate button - mobile only */}
       {!isDesktop && onCalculate && (
-        <Button size="4" radius="large" onClick={onCalculate} style={{ width: "100%" }}>
+        <Button size="4" radius="large" onClick={onCalculate} style={{ width: "100%", cursor: "pointer" }}>
           {t('calculate')}
         </Button>
       )}

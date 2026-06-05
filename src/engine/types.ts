@@ -28,6 +28,12 @@ export interface TaxInput {
   months: number; // months used for the period (default 12)
   income: IncomeInput;
   deductions: DeductionInput;
+  useVariableSalary?: boolean;
+  useVariableDeductions?: boolean;
+  monthlySalaries?: number[];
+  monthlySSF?: number[];
+  monthlyPF?: number[];
+  monthlyCIT?: number[];
 }
 
 // ----- Slabs / Regime -----
@@ -83,4 +89,30 @@ export interface RegimeResult {
   netIncomeMonthly: number;
   effectiveRate: number;
   months: number;
+}
+
+// ----- Monthly Breakdowns -----
+
+export interface MonthlyBreakdown {
+  monthIndex: number; // 0..11
+  monthNameEn: string;
+  monthNameNe: string;
+  salary: number;
+  ssfContribution: number;
+  pfContribution: number;
+  citContribution: number;
+  otherDeductions: number; // insurance + medical + donations divided by 12
+  totalDeductions: number; // ssf + pf + cit
+  projectedAnnualIncome: number;
+  projectedAnnualAllowedDeductions: number;
+  projectedAnnualTax: number;
+  taxDeducted: number;
+  netCashInHand: number;
+}
+
+export interface MonthlyBreakdownResult {
+  months: MonthlyBreakdown[];
+  yearlyActualTax: number;
+  yearlyTaxDeducted: number;
+  refundDue: number;
 }

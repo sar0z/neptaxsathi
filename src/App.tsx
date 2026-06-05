@@ -78,6 +78,12 @@ const DEFAULT_INPUT: TaxInput = {
   contributingSSF: false,
   isFemaleOnlyRemuneration: false,
   months: 12,
+  useVariableSalary: false,
+  useVariableDeductions: false,
+  monthlySalaries: Array(12).fill(0),
+  monthlySSF: Array(12).fill(0),
+  monthlyPF: Array(12).fill(0),
+  monthlyCIT: Array(12).fill(0),
   income: {
     salary: 0,
     bonus: 0,
