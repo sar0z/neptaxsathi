@@ -62,9 +62,10 @@ import { useTranslation } from "./i18n/LanguageContext";
 
 import DataEntry from "./components/DataEntry";
 import Calculation from "./components/Calculation";
+import MonthlyEntry from "./components/MonthlyEntry";
 import Information from "./components/Information";
 import DeveloperInfo from "./components/DeveloperInfo";
-import { EditIcon, ChartIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon } from "./components/icons";
+import { EditIcon, ChartIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon, TableIcon } from "./components/icons";
 
 declare global {
   interface Window {
@@ -94,7 +95,7 @@ const DEFAULT_INPUT: TaxInput = {
   },
 };
 
-const TABS = ["entry", "calc", "info"] as const;
+const TABS = ["entry", "variable", "calc", "info"] as const;
 type TabKey = (typeof TABS)[number];
 
 export default function App() {
@@ -107,9 +108,8 @@ export default function App() {
   const { language, setLanguage, t } = useTranslation();
 
   const NAV = [
-    { key: "entry" as const, label: t('navEntry'), Icon: EditIcon },
-    { key: "calc" as const, label: t('navResults'), Icon: ChartIcon },
-    { key: "info" as const, label: t('navInfo'), Icon: InfoIcon },
+    { key: "entry" as const, label: "Annual Tax Calculation", Icon: EditIcon },
+    { key: "variable" as const, label: "12-Month Variable Tax Calculation", Icon: TableIcon },
   ];
 
   const [input, setInput] = useState<TaxInput>(DEFAULT_INPUT);
@@ -184,6 +184,36 @@ export default function App() {
                 </Text>
               </Box>
             </Flex>
+
+            {isDesktop && (
+              <Flex gap="3" align="center">
+                {NAV.map(({ key, label, Icon }) => (
+                  <Button
+                    key={key}
+                    variant={tab === key ? "soft" : "ghost"}
+                    color={tab === key ? "indigo" : "gray"}
+                    onClick={() => handleTabChange(key)}
+                    style={{
+                      cursor: "pointer",
+                      fontWeight: tab === key ? "600" : "500",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      height: "36px",
+                      padding: "0 16px",
+                      whiteSpace: "nowrap",
+                    }}
+                    size="2"
+                  >
+                    <Box style={{ width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon className="w-4 h-4" />
+                    </Box>
+                    <Text size="2">{label}</Text>
+                  </Button>
+                ))}
+              </Flex>
+            )}
+
             <Flex align="center" gap="5">
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
@@ -276,54 +306,74 @@ export default function App() {
 
         {/* Body */}
         {isDesktop ? (
-          /* ===== Desktop: sidebar + main ===== */
-          <Flex style={{ flex: 1, overflow: "hidden" }}>
-            <Box
-              style={{
-                width: 440,
-                flexShrink: 0,
-                borderRight: "1px solid var(--gray-a4)",
-                background: "var(--gray-1)",
-                overflowY: "auto",
-              }}
-            >
-              <Box p="5">
-                <DataEntry input={input} setInput={setInput} />
-              </Box>
-            </Box>
+          /* ===== Desktop views ===== */
+          tab === "variable" ? (
             <Box style={{ flex: 1, overflowY: "auto" }}>
-              <Container size="3" px="6" py="6">
-                <Box mb="5">
-                  <Heading size="6" as="h2">
-                    {t('calculationResults')}
-                  </Heading>
-                  <Text size="2" color="gray" as="div" mt="1">
-                    {t('resultsSubtitle')}
-                  </Text>
-                </Box>
-                <Calculation input={input} />
+              <Container size="4" px="6" py="6">
+                <MonthlyEntry onBack={() => setTab("entry")} />
               </Container>
             </Box>
-          </Flex>
+          ) : tab === "info" ? (
+            <Box style={{ flex: 1, overflowY: "auto" }}>
+              <Container size="3" px="6" py="6">
+                <Information />
+              </Container>
+            </Box>
+          ) : (
+            /* Standard: split layout for entry and calc */
+            <Flex style={{ flex: 1, overflow: "hidden" }}>
+              <Box
+                style={{
+                  width: 440,
+                  flexShrink: 0,
+                  borderRight: "1px solid var(--gray-a4)",
+                  background: "var(--gray-1)",
+                  overflowY: "auto",
+                }}
+              >
+                <Box p="5">
+                  <DataEntry input={input} setInput={setInput} />
+                </Box>
+              </Box>
+              <Box style={{ flex: 1, overflowY: "auto" }}>
+                <Container size="3" px="6" py="6">
+                  <Box mb="5">
+                    <Heading size="6" as="h2">
+                      {t('calculationResults')}
+                    </Heading>
+                    <Text size="2" color="gray" as="div" mt="1">
+                      {t('resultsSubtitle')}
+                    </Text>
+                  </Box>
+                  <Calculation input={input} />
+                </Container>
+              </Box>
+            </Flex>
+          )
         ) : (
           /* ===== Mobile: sliding tabs + custom bottom nav ===== */
           <Flex direction="column" style={{ flex: 1, overflow: "hidden" }}>
             <Box className="slider-viewport" style={{ flex: 1 }}>
               <Box
                 className="slider-track"
-                style={{ transform: `translateX(-${tabIndex * 33.3333}%)` }}
+                style={{ transform: `translateX(-${tabIndex * 25}%)`, width: "400%" }}
               >
-                <Box className="slider-slide">
+                <Box className="slider-slide" style={{ width: "25%" }}>
                   <Box p="4">
                     <DataEntry input={input} setInput={setInput} onCalculate={() => { setTab("calc"); window.umami?.track("calculate-clicked", { taxpayerType: input.taxpayerType }); }} />
                   </Box>
                 </Box>
-                <Box className="slider-slide">
+                <Box className="slider-slide" style={{ width: "25%" }}>
+                  <Box p="4">
+                    <MonthlyEntry onBack={() => setTab("entry")} />
+                  </Box>
+                </Box>
+                <Box className="slider-slide" style={{ width: "25%" }}>
                   <Box p="4">
                     <Calculation input={input} onBack={() => setTab("entry")} />
                   </Box>
                 </Box>
-                <Box className="slider-slide">
+                <Box className="slider-slide" style={{ width: "25%" }}>
                   <Box p="4">
                     <Information />
                   </Box>

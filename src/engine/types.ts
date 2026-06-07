@@ -30,6 +30,29 @@ export interface TaxInput {
   deductions: DeductionInput;
 }
 
+export interface MonthlyInputRow {
+  monthName: string; // e.g. "Shrawan"
+  basicSalary: number;
+  ssf: number;
+  pf: number;
+  cit: number;
+}
+
+export interface VariableTaxInput {
+  fiscalYear: string;
+  taxpayerType: TaxpayerType;
+  contributingSSF: boolean;
+  isFemaleOnlyRemuneration: boolean;
+  annualAllowance: number; // Annual total allowance
+  annualBonus: number;     // Annual total bonus/OT
+  otherIncome: number;     // Annual other income
+  insurance: number;       // Annual life insurance
+  medicalInsurance: number; // Annual medical insurance
+  donations: number;       // Annual donations
+  monthsData: MonthlyInputRow[];
+}
+
+
 // ----- Slabs / Regime -----
 
 export interface Slab {

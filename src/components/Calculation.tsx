@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { Flex, Text, Heading, Box, Button, Table, Grid, Badge } from "@radix-ui/themes";
-import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon, Share1Icon } from "@radix-ui/react-icons";
+import { ArrowDownIcon, ArrowUpIcon, Share1Icon } from "@radix-ui/react-icons";
 import type { TaxInput } from "../engine/types";
 import { calculateRegime, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import RegimeView from "./RegimeView";
-import { useIsDesktop } from "../hooks/useIsDesktop";
+
 import { useTranslation } from "../i18n/LanguageContext";
 import ShareTaxDetails from "./ShareTaxDetails";
 
@@ -14,10 +14,10 @@ interface Props {
   onBack?: () => void;
 }
 
-export default function Calculation({ input, onBack }: Props) {
+export default function Calculation({ input, onBack: _onBack }: Props) {
   const { t, language } = useTranslation();
   const currency = t('currency');
-  const isDesktop = useIsDesktop();
+
   const [shareOpen, setShareOpen] = useState(false);
   const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
   const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
@@ -654,15 +654,7 @@ export default function Calculation({ input, onBack }: Props) {
         </Grid>
       )}
 
-      {/* Back button - mobile only */}
-      {!isDesktop && onBack && (
-        <Button size="4" radius="large" onClick={onBack} style={{ width: "100%" }}>
-          <Flex align="center" gap="2">
-            <ArrowLeftIcon width="16" height="16" />
-            {t('backToEntry')}
-          </Flex>
-        </Button>
-      )}
+
 
       <ShareTaxDetails input={input} open={shareOpen} onOpenChange={setShareOpen} />
     </Flex>
