@@ -359,6 +359,27 @@ body[data-language="ne"] .tnum {
   }
 }
 
+/* ============================================================
+   Bottom sheet animations
+   ============================================================ */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
 @keyframes bannerProgress {
   from {
     width: 100%;

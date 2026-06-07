@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
-import { Flex, Text, Heading, Box, Button, Table, Grid, Switch, TextField, Card, Badge } from "@radix-ui/themes";
+import { createPortal } from "react-dom";
+import { Flex, Text, Heading, Box, Button, Table, Grid, Switch, TextField, Card, Badge, Dialog } from "@radix-ui/themes";
+import { PlusIcon } from "@radix-ui/react-icons";
+import { useIsDesktop } from "../hooks/useIsDesktop";
+import Calculator from "./Calculator";
 
 import { useTranslation } from "../i18n/LanguageContext";
 import { calculateVariableTDS, npr } from "../engine/taxEngine";
@@ -38,9 +42,60 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function convertToDevanagari(numStr: string): string {
+  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  return numStr.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+}
+
+function formatNumberWithCommas(value: number, language: string = 'en'): string {
+  if (value === 0) return "";
+  const formatted = value.toLocaleString("en-IN");
+  if (language === 'ne') {
+    return convertToDevanagari(formatted);
+  }
+  return formatted;
+}
+
+function parseFormattedNumber(value: string): number {
+  if (!value) return 0;
+  const devanagariToWestern: Record<string, string> = {
+    '०': '0', '१': '1', '२': '2', '३': '3', '४': '4',
+    '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'
+  };
+  const westernValue = value.replace(/[०१२३४५६७८९]/g, (digit) => devanagariToWestern[digit]);
+  const parsed = parseInt(westernValue.replace(/,/g, ""), 10);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+const CalcIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M5 5h1M5 8h1M5 11h1M8 5h3M8 8h3M8 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 export default function MonthlyEntry({ onBack: _onBack }: Props) {
   const { t, language } = useTranslation();
   const currency = t('currency');
+  const isDesktop = useIsDesktop();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"config" | "deductions" | "quickfill">("config");
+
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [calculatorTarget, setCalculatorTarget] = useState<string | null>(null);
+  const [calculatorInitialValue, setCalculatorInitialValue] = useState(0);
+
+  const openCalculator = (field: string, value: number) => {
+    setCalculatorTarget(field);
+    setCalculatorInitialValue(value);
+    setCalculatorOpen(true);
+  };
+
+  const handleCalculatorResult = (value: number) => {
+    if (calculatorTarget) {
+      setVarInput((prev) => ({ ...prev, [calculatorTarget]: value }));
+    }
+  };
 
   const [varInput, setVarInput] = useState(() => ({
     fiscalYear: "2082/83",
@@ -162,8 +217,9 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
         </Badge>
       </Flex>
 
-      {/* Global Config Cards */}
-      <Grid columns={{ initial: "1", md: "3" }} gap="4">
+      {/* Global Config Cards - Desktop Only */}
+      {isDesktop && (
+        <Grid columns={{ initial: "1", md: "3" }} gap="4">
         {/* Taxpayer Config */}
         <Card p="4">
           <Flex direction="column" gap="3">
@@ -236,47 +292,177 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
               <label>
                 <Text size="1" color="gray" mb="1" as="div">Annual Allowances</Text>
                 <TextField.Root
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  min={0}
+                  value={formatNumberWithCommas(varInput.annualAllowance, language)}
+                  size="3"
+                  radius="large"
                   placeholder="0"
-                  value={varInput.annualAllowance || ""}
-                  onChange={(e) => setVarInput((p) => ({ ...p, annualAllowance: parseFloat(e.target.value) || 0 }))}
-                />
+                  onChange={(e) => setVarInput((p) => ({ ...p, annualAllowance: parseFormattedNumber(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("annualAllowance", varInput.annualAllowance)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
               </label>
               <label>
                 <Text size="1" color="gray" mb="1" as="div">Annual Bonus / OT</Text>
                 <TextField.Root
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  min={0}
+                  value={formatNumberWithCommas(varInput.annualBonus, language)}
+                  size="3"
+                  radius="large"
                   placeholder="0"
-                  value={varInput.annualBonus || ""}
-                  onChange={(e) => setVarInput((p) => ({ ...p, annualBonus: parseFloat(e.target.value) || 0 }))}
-                />
+                  onChange={(e) => setVarInput((p) => ({ ...p, annualBonus: parseFormattedNumber(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("annualBonus", varInput.annualBonus)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
               </label>
               <label>
                 <Text size="1" color="gray" mb="1" as="div">Life Insurance Premium</Text>
                 <TextField.Root
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  min={0}
+                  value={formatNumberWithCommas(varInput.insurance, language)}
+                  size="3"
+                  radius="large"
                   placeholder="0"
-                  value={varInput.insurance || ""}
-                  onChange={(e) => setVarInput((p) => ({ ...p, insurance: parseFloat(e.target.value) || 0 }))}
-                />
+                  onChange={(e) => setVarInput((p) => ({ ...p, insurance: parseFormattedNumber(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("insurance", varInput.insurance)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
               </label>
               <label>
                 <Text size="1" color="gray" mb="1" as="div">Medical Insurance Premium</Text>
                 <TextField.Root
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  min={0}
+                  value={formatNumberWithCommas(varInput.medicalInsurance, language)}
+                  size="3"
+                  radius="large"
                   placeholder="0"
-                  value={varInput.medicalInsurance || ""}
-                  onChange={(e) => setVarInput((p) => ({ ...p, medicalInsurance: parseFloat(e.target.value) || 0 }))}
-                />
+                  onChange={(e) => setVarInput((p) => ({ ...p, medicalInsurance: parseFormattedNumber(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("medicalInsurance", varInput.medicalInsurance)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
               </label>
               <label>
                 <Text size="1" color="gray" mb="1" as="div">Donations</Text>
                 <TextField.Root
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  min={0}
+                  value={formatNumberWithCommas(varInput.donations, language)}
+                  size="3"
+                  radius="large"
                   placeholder="0"
-                  value={varInput.donations || ""}
-                  onChange={(e) => setVarInput((p) => ({ ...p, donations: parseFloat(e.target.value) || 0 }))}
-                />
+                  onChange={(e) => setVarInput((p) => ({ ...p, donations: parseFormattedNumber(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("donations", varInput.donations)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
               </label>
             </Flex>
           </Flex>
@@ -285,57 +471,165 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
         {/* Quick Fill Actions */}
         <Card p="4">
           <Flex direction="column" gap="3">
-            <SectionLabel>Quick Fill Helpers</SectionLabel>
-            <Grid columns="2" gap="2">
-              <TextField.Root
-                placeholder="Basic Salary"
-                type="number"
-                value={fillBasic}
-                onChange={(e) => setFillBasic(e.target.value)}
-              />
-              <TextField.Root
-                placeholder="SSF"
-                type="number"
-                value={fillSSF}
-                disabled={!varInput.contributingSSF}
-                style={{ opacity: varInput.contributingSSF ? 1 : 0.45 }}
-                onChange={(e) => setFillSSF(e.target.value)}
-              />
-              <TextField.Root
-                placeholder="PF"
-                type="number"
-                value={fillPF}
-                onChange={(e) => setFillPF(e.target.value)}
-              />
-              <TextField.Root
-                placeholder="CIT"
-                type="number"
-                value={fillCIT}
-                onChange={(e) => setFillCIT(e.target.value)}
-              />
-            </Grid>
+            <SectionLabel>{t('quickFillHelpers')}</SectionLabel>
+            <Flex direction="column" gap="3">
+              <label>
+                <Text size="1" color="gray" mb="1" as="div">{t('basicSalary')}</Text>
+                <TextField.Root
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  value={formatNumberWithCommas(parseFloat(fillBasic) || 0, language)}
+                  size="3"
+                  radius="large"
+                  onChange={(e) => setFillBasic(e.target.value)}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("fillBasic", parseFloat(fillBasic) || 0)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
+              </label>
+              <label>
+                <Text size="1" color="gray" mb="1" as="div">{t('ssf')}</Text>
+                <TextField.Root
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  value={formatNumberWithCommas(parseFloat(fillSSF) || 0, language)}
+                  size="3"
+                  radius="large"
+                  disabled={!varInput.contributingSSF}
+                  style={{ opacity: varInput.contributingSSF ? 1 : 0.45, textAlign: "right" }}
+                  className="tnum"
+                  onChange={(e) => setFillSSF(e.target.value)}
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("fillSSF", parseFloat(fillSSF) || 0)}
+                      style={{
+                        cursor: varInput.contributingSSF ? "pointer" : "not-allowed",
+                        opacity: varInput.contributingSSF ? 0.6 : 0.3,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
+              </label>
+              <label>
+                <Text size="1" color="gray" mb="1" as="div">{t('providentFund')}</Text>
+                <TextField.Root
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  value={formatNumberWithCommas(parseFloat(fillPF) || 0, language)}
+                  size="3"
+                  radius="large"
+                  onChange={(e) => setFillPF(e.target.value)}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("fillPF", parseFloat(fillPF) || 0)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
+              </label>
+              <label>
+                <Text size="1" color="gray" mb="1" as="div">{t('cit')}</Text>
+                <TextField.Root
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9०१२३४५६७८९]*"
+                  value={formatNumberWithCommas(parseFloat(fillCIT) || 0, language)}
+                  size="3"
+                  radius="large"
+                  onChange={(e) => setFillCIT(e.target.value)}
+                  style={{ textAlign: "right" }}
+                  className="tnum"
+                >
+                  <TextField.Slot>
+                    <Text size="1" color="gray">{currency}</Text>
+                  </TextField.Slot>
+                  <TextField.Slot side="right">
+                    <Box
+                      onClick={() => openCalculator("fillCIT", parseFloat(fillCIT) || 0)}
+                      style={{
+                        cursor: "pointer",
+                        opacity: 0.6,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px 4px",
+                        borderRadius: "var(--radius-1)",
+                      }}
+                    >
+                      <CalcIcon />
+                    </Box>
+                  </TextField.Slot>
+                </TextField.Root>
+              </label>
+            </Flex>
             <Flex gap="2" wrap="wrap">
               <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleQuickFill} variant="solid">
-                Apply Fill
+                {t('applyFill')}
               </Button>
               <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleAutoCalcSSF} variant="outline">
-                Auto SSF/PF
+                {t('autoSsfpf')}
               </Button>
             </Flex>
             <Flex gap="2" wrap="wrap">
               <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleResetFillFields} variant="ghost" color="gray">
-                Reset Fields
+                {t('resetFields')}
               </Button>
               <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleClearAll} variant="ghost" color="red">
-                Clear All Data
+                {t('clearAllData')}
               </Button>
             </Flex>
             <Text size="1" color="gray">
-              * Auto SSF/PF: 11% SSF (if SSF enabled) + 10% PF of Basic Salary. Clear All resets all 12 months to zero.
+              {t('quickFillNote')}
             </Text>
           </Flex>
         </Card>
       </Grid>
+      )}
 
       {/* Main Tabular Input */}
       <Box
@@ -652,6 +946,511 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
           }}
         />
       </Grid>
+
+      {/* Mobile Floating Action Button */}
+      {!isDesktop && !settingsOpen && typeof document !== "undefined" && createPortal(
+        <Button
+          onClick={() => setSettingsOpen(true)}
+          style={{
+            position: "fixed",
+            bottom: 80,
+            right: 24,
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: "var(--indigo-9)",
+            color: "white",
+            boxShadow: "0 4px 12px var(--indigo-a7)",
+            cursor: "pointer",
+            zIndex: 9,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <PlusIcon width="24" height="24" />
+        </Button>,
+        document.body
+      )}
+
+      {/* Mobile Settings Dialog */}
+      <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <Dialog.Content
+          className="settings-bottom-sheet"
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            top: "auto",
+            borderRadius: "16px 16px 0 0",
+            padding: 0,
+            margin: 0,
+            minHeight: "75dvh",
+            maxHeight: "75dvh",
+            zIndex: 100,
+            animation: settingsOpen ? "slideInUp 0.3s cubic-bezier(0.32, 0.72, 0, 1)" : "slideOutDown 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+          }}
+        >
+          <Flex direction="column" style={{ height: "100%" }}>
+            {/* Header with tabs */}
+            <Box px="4" py="3" style={{ borderBottom: "1px solid var(--gray-a4)", background: "var(--color-panel-solid)" }}>
+              <Flex justify="between" align="center" mb="3">
+                <Text size="4" weight="bold">{t('settings')}</Text>
+                <Dialog.Close>
+                  <Button variant="ghost" color="gray" size="2" style={{ cursor: "pointer" }}>✕</Button>
+                </Dialog.Close>
+              </Flex>
+              <Flex gap="2">
+                <Button
+                  variant={settingsTab === "config" ? "solid" : "ghost"}
+                  color={settingsTab === "config" ? "indigo" : "gray"}
+                  size="1"
+                  onClick={() => setSettingsTab("config")}
+                  style={{ flex: 1, cursor: "pointer" }}
+                >
+                  {t('config')}
+                </Button>
+                <Button
+                  variant={settingsTab === "deductions" ? "solid" : "ghost"}
+                  color={settingsTab === "deductions" ? "indigo" : "gray"}
+                  size="1"
+                  onClick={() => setSettingsTab("deductions")}
+                  style={{ flex: 1, cursor: "pointer" }}
+                >
+                  {t('deductionsTab')}
+                </Button>
+                <Button
+                  variant={settingsTab === "quickfill" ? "solid" : "ghost"}
+                  color={settingsTab === "quickfill" ? "indigo" : "gray"}
+                  size="1"
+                  onClick={() => setSettingsTab("quickfill")}
+                  style={{ flex: 1, cursor: "pointer" }}
+                >
+                  {t('quickFill')}
+                </Button>
+              </Flex>
+            </Box>
+
+            {/* Content */}
+            <Box p="4" style={{ flex: 1, overflowY: "auto" }}>
+              {settingsTab === "config" && (
+                <Flex direction="column" gap="4">
+                  <SectionLabel>{t('taxpayerType')}</SectionLabel>
+                  <Flex gap="2">
+                    <Box
+                      onClick={() => setVarInput((p) => ({ ...p, taxpayerType: "individual" }))}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: "var(--radius-3)",
+                        border: varInput.taxpayerType === "individual" ? "2px solid var(--indigo-9)" : "1px solid var(--gray-a3)",
+                        background: varInput.taxpayerType === "individual" ? "var(--indigo-2)" : "var(--gray-2)",
+                        cursor: "pointer",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Text size="2" weight="bold">{t('individual')}</Text>
+                    </Box>
+                    <Box
+                      onClick={() => setVarInput((p) => ({ ...p, taxpayerType: "couple" }))}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: "var(--radius-3)",
+                        border: varInput.taxpayerType === "couple" ? "2px solid var(--indigo-9)" : "1px solid var(--gray-a3)",
+                        background: varInput.taxpayerType === "couple" ? "var(--indigo-2)" : "var(--gray-2)",
+                        cursor: "pointer",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Text size="2" weight="bold">{t('couple')}</Text>
+                    </Box>
+                  </Flex>
+
+                  <Flex align="center" justify="between" pt="2" style={{ borderTop: "1px solid var(--gray-a3)" }}>
+                    <Flex direction="column" gap="1">
+                      <Text size="2" weight="medium">{t('contributingSSF')}</Text>
+                      <Text size="1" color="gray">{t('ssfNote')}</Text>
+                    </Flex>
+                    <Switch
+                      checked={varInput.contributingSSF}
+                      onCheckedChange={(v) => setVarInput((p) => {
+                        const updated = { ...p, contributingSSF: v };
+                        if (!v) {
+                          updated.monthsData = p.monthsData.map((row) => ({ ...row, ssf: 0 }));
+                        }
+                        return updated;
+                      })}
+                    />
+                  </Flex>
+
+                  <Flex align="center" justify="between" pt="2" style={{ borderTop: "1px solid var(--gray-a3)" }}>
+                    <Box>
+                      <Text size="2" weight="medium">{t('femaleOnlyRemuneration')}</Text>
+                    </Box>
+                    <Switch
+                      checked={varInput.isFemaleOnlyRemuneration}
+                      onCheckedChange={(v) => setVarInput((p) => ({ ...p, isFemaleOnlyRemuneration: v }))}
+                    />
+                  </Flex>
+                </Flex>
+              )}
+
+              {settingsTab === "deductions" && (
+                <Flex direction="column" gap="3">
+                  <SectionLabel>{t('annualIncomeDeductions')}</SectionLabel>
+                  <Flex direction="column" gap="3">
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('annualAllowances')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(varInput.annualAllowance, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setVarInput((p) => ({ ...p, annualAllowance: parseFormattedNumber(e.target.value) }))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("annualAllowance", varInput.annualAllowance)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('annualBonusOt')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(varInput.annualBonus, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setVarInput((p) => ({ ...p, annualBonus: parseFormattedNumber(e.target.value) }))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("annualBonus", varInput.annualBonus)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('lifeInsurancePremium')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(varInput.insurance, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setVarInput((p) => ({ ...p, insurance: parseFormattedNumber(e.target.value) }))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("insurance", varInput.insurance)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('medicalInsurancePremium')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(varInput.medicalInsurance, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setVarInput((p) => ({ ...p, medicalInsurance: parseFormattedNumber(e.target.value) }))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("medicalInsurance", varInput.medicalInsurance)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">Donations</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        min={0}
+                        value={formatNumberWithCommas(varInput.donations, language)}
+                        size="3"
+                        radius="large"
+                        placeholder="0"
+                        onChange={(e) => setVarInput((p) => ({ ...p, donations: parseFormattedNumber(e.target.value) }))}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("donations", varInput.donations)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                  </Flex>
+                </Flex>
+              )}
+
+              {settingsTab === "quickfill" && (
+                <Flex direction="column" gap="3">
+                  <SectionLabel>{t('quickFillHelpers')}</SectionLabel>
+                  <Flex direction="column" gap="3">
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('basicSalary')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        value={formatNumberWithCommas(parseFloat(fillBasic) || 0, language)}
+                        size="3"
+                        radius="large"
+                        onChange={(e) => setFillBasic(e.target.value)}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("fillBasic", parseFloat(fillBasic) || 0)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('ssf')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        value={formatNumberWithCommas(parseFloat(fillSSF) || 0, language)}
+                        size="3"
+                        radius="large"
+                        disabled={!varInput.contributingSSF}
+                        style={{ opacity: varInput.contributingSSF ? 1 : 0.45, textAlign: "right" }}
+                        className="tnum"
+                        onChange={(e) => setFillSSF(e.target.value)}
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("fillSSF", parseFloat(fillSSF) || 0)}
+                            style={{
+                              cursor: varInput.contributingSSF ? "pointer" : "not-allowed",
+                              opacity: varInput.contributingSSF ? 0.6 : 0.3,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('providentFund')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        value={formatNumberWithCommas(parseFloat(fillPF) || 0, language)}
+                        size="3"
+                        radius="large"
+                        onChange={(e) => setFillPF(e.target.value)}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("fillPF", parseFloat(fillPF) || 0)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                    <label>
+                      <Text size="1" color="gray" mb="1" as="div">{t('cit')}</Text>
+                      <TextField.Root
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9०१२३४५६७८९]*"
+                        value={formatNumberWithCommas(parseFloat(fillCIT) || 0, language)}
+                        size="3"
+                        radius="large"
+                        onChange={(e) => setFillCIT(e.target.value)}
+                        style={{ textAlign: "right" }}
+                        className="tnum"
+                      >
+                        <TextField.Slot>
+                          <Text size="1" color="gray">{currency}</Text>
+                        </TextField.Slot>
+                        <TextField.Slot side="right">
+                          <Box
+                            onClick={() => openCalculator("fillCIT", parseFloat(fillCIT) || 0)}
+                            style={{
+                              cursor: "pointer",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "2px 4px",
+                              borderRadius: "var(--radius-1)",
+                            }}
+                          >
+                            <CalcIcon />
+                          </Box>
+                        </TextField.Slot>
+                      </TextField.Root>
+                    </label>
+                  </Flex>
+                  <Flex gap="2" wrap="wrap">
+                    <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleQuickFill} variant="solid">
+                      {t('applyFill')}
+                    </Button>
+                    <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleAutoCalcSSF} variant="outline">
+                      {t('autoSsfpf')}
+                    </Button>
+                  </Flex>
+                  <Flex gap="2" wrap="wrap">
+                    <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleResetFillFields} variant="ghost" color="gray">
+                      {t('resetFields')}
+                    </Button>
+                    <Button style={{ flex: 1, cursor: "pointer", minWidth: 100 }} onClick={handleClearAll} variant="ghost" color="red">
+                      {t('clearAllData')}
+                    </Button>
+                  </Flex>
+                  <Text size="1" color="gray">
+                    {t('quickFillNote')}
+                  </Text>
+                </Flex>
+              )}
+            </Box>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {/* Calculator Dialog */}
+      <Calculator
+        open={calculatorOpen}
+        onOpenChange={setCalculatorOpen}
+        initialValue={calculatorInitialValue}
+        onResult={handleCalculatorResult}
+      />
     </Flex>
   );
 }

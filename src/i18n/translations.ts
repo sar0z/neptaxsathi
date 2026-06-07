@@ -21,6 +21,30 @@ export const translations = {
     navInfo: 'Info',
     backToEntry: 'Back to Entry',
     
+    // Quick Fill Helpers
+    quickFillHelpers: 'Quick Fill Helpers',
+    basicSalary: 'Basic Salary',
+    applyFill: 'Apply Fill',
+    autoSsfpf: 'Auto SSF/PF',
+    resetFields: 'Reset Fields',
+    clearAllData: 'Clear All Data',
+    quickFillNote: '* Auto SSF/PF: 11% SSF (if SSF enabled) + 10% PF of Basic Salary. Clear All resets all 12 months to zero.',
+    
+    // Monthly Entry
+    monthlyVariableSalaryEntry: '12-Month Variable Salary Entry',
+    variableIncomeMode: 'Variable Income Mode',
+    annualIncomeDeductions: 'Annual Income & Deductions',
+    annualAllowances: 'Annual Allowances',
+    annualBonusOt: 'Annual Bonus / OT',
+    lifeInsurancePremium: 'Life Insurance Premium',
+    medicalInsurancePremium: 'Medical Insurance Premium',
+    
+    // Settings Dialog
+    settings: 'Settings',
+    config: 'Config',
+    deductionsTab: 'Deductions',
+    quickFill: 'Quick Fill',
+    
     // Taxpayer Type
     taxpayerType: 'Taxpayer Type',
     individual: 'Individual',
@@ -172,6 +196,30 @@ export const translations = {
     navResults: 'नतिजा',
     navInfo: 'जानकारी',
     backToEntry: 'प्रविष्टिमा फर्कनुहोस्',
+    
+    // Quick Fill Helpers
+    quickFillHelpers: 'द्रुत भर्ने सहायक',
+    basicSalary: 'आधारभूत तलब',
+    applyFill: 'भर्नुहोस्',
+    autoSsfpf: 'स्वत: SSF/PF',
+    resetFields: 'क्षेत्रहरू रिसेट गर्नुहोस्',
+    clearAllData: 'सबै डाटा मेटाउनुहोस्',
+    quickFillNote: '* स्वत: SSF/PF: ११% SSF (यदि SSF सक्षम भएमा) + १०% PF आधारभूत तलबको। सबै मेटाउनले सबै १२ महिना शून्यमा रिसेट गर्दछ।',
+    
+    // Monthly Entry
+    monthlyVariableSalaryEntry: '१२-महिना चर तलब प्रविष्टि',
+    variableIncomeMode: 'चर आम्दानी मोड',
+    annualIncomeDeductions: 'वार्षिक आम्दानी र कटौतीहरू',
+    annualAllowances: 'वार्षिक भत्ताहरू',
+    annualBonusOt: 'वार्षिक बोनस / OT',
+    lifeInsurancePremium: 'जीवन बीमा प्रिमियम',
+    medicalInsurancePremium: 'चिकित्सा बीमा प्रिमियम',
+    
+    // Settings Dialog
+    settings: 'सेटिङहरू',
+    config: 'कन्फिग',
+    deductionsTab: 'कटौतीहरू',
+    quickFill: 'द्रुत भर्ने',
     
     // Taxpayer Type
     taxpayerType: 'करदाता प्रकार',
