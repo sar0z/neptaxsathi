@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Flex, Text, Heading, Box, Button, Table, Grid, Switch, TextField, Card, Badge, Dialog } from "@radix-ui/themes";
-import { PlusIcon } from "@radix-ui/react-icons";
+import { Flex, Text, Heading, Box, Button, Table, Grid, Switch, TextField, Card, Badge, Dialog, Popover } from "@radix-ui/themes";
+import { PlusIcon, Cross2Icon, TrashIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import Calculator from "./Calculator";
 
@@ -84,6 +84,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calculatorTarget, setCalculatorTarget] = useState<string | null>(null);
   const [calculatorInitialValue, setCalculatorInitialValue] = useState(0);
+  const [openAccordionId, setOpenAccordionId] = useState<string | null>(null);
 
   const openCalculator = (field: string, value: number) => {
     setCalculatorTarget(field);
@@ -95,6 +96,39 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
     if (calculatorTarget) {
       setVarInput((prev) => ({ ...prev, [calculatorTarget]: value }));
     }
+  };
+
+  const addMonthRow = () => {
+    setVarInput((prev) => ({
+      ...prev,
+      monthsData: [
+        ...prev.monthsData,
+        {
+          id: crypto.randomUUID(),
+          monthName: "",
+          basicSalary: 0,
+          ssf: 0,
+          pf: 0,
+          cit: 0,
+        },
+      ],
+    }));
+  };
+
+  const removeMonthRow = (id: string) => {
+    setVarInput((prev) => ({
+      ...prev,
+      monthsData: prev.monthsData.filter((row) => row.id !== id),
+    }));
+  };
+
+  const updateMonthName = (id: string, monthName: string) => {
+    setVarInput((prev) => ({
+      ...prev,
+      monthsData: prev.monthsData.map((row) =>
+        row.id === id ? { ...row, monthName } : row
+      ),
+    }));
   };
 
   const [varInput, setVarInput] = useState(() => ({
@@ -109,6 +143,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
     medicalInsurance: 0,
     donations: 0,
     monthsData: MONTH_NAMES.map((m) => ({
+      id: crypto.randomUUID(),
       monthName: m,
       basicSalary: 0,
       ssf: 0,
@@ -640,92 +675,300 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
           overflowX: "auto",
         }}
       >
-        <Table.Root variant="surface" style={{ minWidth: 900 }}>
-          <Table.Header>
-            <Table.Row style={{ background: "var(--gray-3)" }}>
-              <Table.ColumnHeaderCell style={{ width: 140 }}>Month</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Basic Salary</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ opacity: varInput.contributingSSF ? 1 : 0.45 }}>
-                SSF {!varInput.contributingSSF && <Text size="1" color="gray">(disabled)</Text>}
-              </Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>PF</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>CIT</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: "var(--indigo-10)" }}>TDS (Old/New)</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: "var(--teal-10)" }}>Net Salary (Old/New)</Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
+        <Flex justify="between" align="center" p="3" style={{ borderBottom: "1px solid var(--gray-a4)" }}>
+          <Text weight="bold">{t('monthlyVariableSalaryEntry')}</Text>
+          <Button size="1" onClick={addMonthRow} style={{ cursor: "pointer" }}>
+            <PlusIcon width="14" height="14" style={{ marginRight: 4 }} />
+            Add Month
+          </Button>
+        </Flex>
+
+        {/* Desktop Table */}
+        {isDesktop ? (
+          <Table.Root variant="surface" style={{ minWidth: 900 }}>
+            <Table.Header>
+              <Table.Row style={{ background: "var(--gray-3)" }}>
+                <Table.ColumnHeaderCell style={{ width: 180 }}>Month</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Basic Salary</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ opacity: varInput.contributingSSF ? 1 : 0.45 }}>
+                  SSF {!varInput.contributingSSF && <Text size="1" color="gray">(disabled)</Text>}
+                </Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>PF</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>CIT</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: "var(--indigo-10)" }}>TDS (Old/New)</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: "var(--teal-10)" }}>Net Salary (Old/New)</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ width: 50 }}></Table.ColumnHeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {varInput.monthsData.map((row, idx) => {
+                const oldRowResult = oldResult.monthlyRows[idx];
+                const newRowResult = newResult.monthlyRows[idx];
+
+                return (
+                  <Table.Row key={row.id} style={{ background: idx % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
+                    <Table.RowHeaderCell style={{ verticalAlign: "middle" }}>
+                      <TextField.Root
+                        size="2"
+                        value={row.monthName}
+                        onChange={(e) => updateMonthName(row.id, e.target.value)}
+                        placeholder="Type month name"
+                        style={{ width: "100%" }}
+                      />
+                    </Table.RowHeaderCell>
+                    <Table.Cell>
+                      <TextField.Root
+                        type="number"
+                        size="2"
+                        value={row.basicSalary || ""}
+                        onChange={(e) => updateRowField(idx, "basicSalary", parseFloat(e.target.value) || 0)}
+                        style={{ width: "100%" }}
+                      />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <TextField.Root
+                        type="number"
+                        size="2"
+                        value={row.ssf || ""}
+                        onChange={(e) => updateRowField(idx, "ssf", parseFloat(e.target.value) || 0)}
+                        disabled={!varInput.contributingSSF}
+                        style={{ width: "100%", opacity: varInput.contributingSSF ? 1 : 0.45 }}
+                      />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <TextField.Root
+                        type="number"
+                        size="2"
+                        value={row.pf || ""}
+                        onChange={(e) => updateRowField(idx, "pf", parseFloat(e.target.value) || 0)}
+                        style={{ width: "100%" }}
+                      />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <TextField.Root
+                        type="number"
+                        size="2"
+                        value={row.cit || ""}
+                        onChange={(e) => updateRowField(idx, "cit", parseFloat(e.target.value) || 0)}
+                        style={{ width: "100%" }}
+                      />
+                    </Table.Cell>
+                    <Table.Cell style={{ verticalAlign: "middle" }}>
+                      <Flex direction="column" gap="1">
+                        <Text size="1" color="indigo" weight="bold">
+                          Old: {npr(oldRowResult?.tds || 0, language, "")}
+                        </Text>
+                        <Text size="1" color="teal" weight="bold">
+                          New: {npr(newRowResult?.tds || 0, language, "")}
+                        </Text>
+                      </Flex>
+                    </Table.Cell>
+                    <Table.Cell style={{ verticalAlign: "middle" }}>
+                      <Flex direction="column" gap="1">
+                        <Text size="1" color="gray">
+                          Old: {npr(oldRowResult?.netSalary || 0, language, "")}
+                        </Text>
+                        <Text size="1" color="gray">
+                          New: {npr(newRowResult?.netSalary || 0, language, "")}
+                        </Text>
+                      </Flex>
+                    </Table.Cell>
+                    <Table.Cell style={{ verticalAlign: "middle" }}>
+                      <Button
+                        variant="ghost"
+                        color="red"
+                        size="1"
+                        onClick={() => removeMonthRow(row.id)}
+                        style={{ cursor: "pointer" }}
+                        disabled={varInput.monthsData.length <= 1}
+                      >
+                        <TrashIcon width="14" height="14" />
+                      </Button>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })}
+            </Table.Body>
+          </Table.Root>
+        ) : (
+          /* Mobile Accordion Cards */
+          <Flex direction="column" gap="2" p="3">
             {varInput.monthsData.map((row, idx) => {
               const oldRowResult = oldResult.monthlyRows[idx];
               const newRowResult = newResult.monthlyRows[idx];
+              const isOpen = openAccordionId === row.id;
 
               return (
-                <Table.Row key={row.monthName} style={{ background: idx % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
-                  <Table.RowHeaderCell style={{ verticalAlign: "middle" }}>
-                    <Text weight="bold">{row.monthName}</Text>
-                  </Table.RowHeaderCell>
-                  <Table.Cell>
-                    <TextField.Root
-                      type="number"
-                      size="2"
-                      value={row.basicSalary || ""}
-                      onChange={(e) => updateRowField(idx, "basicSalary", parseFloat(e.target.value) || 0)}
-                      style={{ width: "100%" }}
-                    />
-                  </Table.Cell>
-                  <Table.Cell>
-                    <TextField.Root
-                      type="number"
-                      size="2"
-                      value={row.ssf || ""}
-                      onChange={(e) => updateRowField(idx, "ssf", parseFloat(e.target.value) || 0)}
-                      disabled={!varInput.contributingSSF}
-                      style={{ width: "100%", opacity: varInput.contributingSSF ? 1 : 0.45 }}
-                    />
-                  </Table.Cell>
-                  <Table.Cell>
-                    <TextField.Root
-                      type="number"
-                      size="2"
-                      value={row.pf || ""}
-                      onChange={(e) => updateRowField(idx, "pf", parseFloat(e.target.value) || 0)}
-                      style={{ width: "100%" }}
-                    />
-                  </Table.Cell>
-                  <Table.Cell>
-                    <TextField.Root
-                      type="number"
-                      size="2"
-                      value={row.cit || ""}
-                      onChange={(e) => updateRowField(idx, "cit", parseFloat(e.target.value) || 0)}
-                      style={{ width: "100%" }}
-                    />
-                  </Table.Cell>
-                  <Table.Cell style={{ verticalAlign: "middle" }}>
-                    <Flex direction="column" gap="1">
-                      <Text size="1" color="indigo" weight="bold">
-                        Old: {npr(oldRowResult?.tds || 0, language, "")}
+                <Card key={row.id} style={{ position: "relative", overflow: "hidden" }}>
+                  {/* Accordion Header - Single Line */}
+                  <Flex
+                    justify="between"
+                    align="center"
+                    p="3"
+                    style={{ 
+                      cursor: "pointer", 
+                      minHeight: 48,
+                      borderBottom: isOpen ? "1px solid var(--gray-a3)" : "none" 
+                    }}
+                    onClick={() => setOpenAccordionId(isOpen ? null : row.id)}
+                  >
+                    <Flex align="center" gap="3" style={{ flex: 1, minWidth: 0 }}>
+                      <Text 
+                        size="2" 
+                        weight="bold" 
+                        style={{ 
+                          flex: 1, 
+                          minWidth: 0, 
+                          overflow: "hidden", 
+                          textOverflow: "ellipsis", 
+                          whiteSpace: "nowrap",
+                          fontFamily: row.monthName ? "var(--font-default)" : "var(--font-mono)",
+                          color: row.monthName ? "var(--gray-12)" : "var(--gray-8)"
+                        }}
+                      >
+                        {row.monthName || "(undefined)"}
                       </Text>
-                      <Text size="1" color="teal" weight="bold">
-                        New: {npr(newRowResult?.tds || 0, language, "")}
-                      </Text>
+                      <Flex gap="3" style={{ flexShrink: 0 }}>
+                        <Text size="1" color="indigo" weight="bold" style={{ whiteSpace: "nowrap" }}>
+                          TDS: {npr(newRowResult?.tds || 0, language, "")}
+                        </Text>
+                        <Text size="1" color="gray" style={{ whiteSpace: "nowrap" }}>
+                          Net: {npr(newRowResult?.netSalary || 0, language, "")}
+                        </Text>
+                      </Flex>
                     </Flex>
-                  </Table.Cell>
-                  <Table.Cell style={{ verticalAlign: "middle" }}>
-                    <Flex direction="column" gap="1">
-                      <Text size="1" color="gray">
-                        Old: {npr(oldRowResult?.netSalary || 0, language, "")}
-                      </Text>
-                      <Text size="1" color="gray">
-                        New: {npr(newRowResult?.netSalary || 0, language, "")}
-                      </Text>
+                    <ChevronDownIcon 
+                      width="16" 
+                      height="16" 
+                      style={{ 
+                        flexShrink: 0,
+                        transition: "transform 0.2s ease",
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)"
+                      }} 
+                    />
+                  </Flex>
+
+                  {/* Accordion Content */}
+                  <Box
+                    style={{
+                      maxHeight: isOpen ? "1000px" : "0",
+                      overflow: "hidden",
+                      transition: "max-height 0.3s ease-out, opacity 0.2s ease",
+                      opacity: isOpen ? 1 : 0,
+                    }}
+                  >
+                    <Flex direction="column" gap="3" p="3">
+                      <Flex justify="between" align="center" mb="2">
+                        <Text size="1" color="gray" weight="bold">Month Details</Text>
+                        <Button
+                          variant="ghost"
+                          color="red"
+                          size="1"
+                          onClick={() => removeMonthRow(row.id)}
+                          style={{ cursor: "pointer" }}
+                          disabled={varInput.monthsData.length <= 1}
+                        >
+                          <TrashIcon width="14" height="14" style={{ marginRight: 4 }} />
+                          Delete
+                        </Button>
+                      </Flex>
+                      <label>
+                        <Text size="1" color="gray" mb="1" as="div">Month Name</Text>
+                        <Popover.Root>
+                          <Popover.Trigger>
+                            <TextField.Root
+                              size="2"
+                              value={row.monthName}
+                              onChange={(e) => updateMonthName(row.id, e.target.value)}
+                              placeholder="Type or select month"
+                              style={{ width: "100%" }}
+                            />
+                          </Popover.Trigger>
+                          <Popover.Content style={{ width: 200, maxHeight: 200, overflowY: "auto" }}>
+                            <Flex direction="column" gap="1">
+                              {MONTH_NAMES.map((month) => (
+                                <Button
+                                  key={month}
+                                  variant="ghost"
+                                  size="1"
+                                  onClick={() => updateMonthName(row.id, month)}
+                                  style={{ cursor: "pointer", textAlign: "left", justifyContent: "flex-start" }}
+                                >
+                                  {month}
+                                </Button>
+                              ))}
+                            </Flex>
+                          </Popover.Content>
+                        </Popover.Root>
+                      </label>
+                      <label>
+                        <Text size="1" color="gray" mb="1" as="div">Basic Salary</Text>
+                        <TextField.Root
+                          type="number"
+                          size="2"
+                          value={row.basicSalary || ""}
+                          onChange={(e) => updateRowField(idx, "basicSalary", parseFloat(e.target.value) || 0)}
+                          style={{ width: "100%" }}
+                        />
+                      </label>
+                      <label>
+                        <Text size="1" color="gray" mb="1" as="div">SSF</Text>
+                        <TextField.Root
+                          type="number"
+                          size="2"
+                          value={row.ssf || ""}
+                          onChange={(e) => updateRowField(idx, "ssf", parseFloat(e.target.value) || 0)}
+                          disabled={!varInput.contributingSSF}
+                          style={{ width: "100%", opacity: varInput.contributingSSF ? 1 : 0.45 }}
+                        />
+                      </label>
+                      <label>
+                        <Text size="1" color="gray" mb="1" as="div">PF</Text>
+                        <TextField.Root
+                          type="number"
+                          size="2"
+                          value={row.pf || ""}
+                          onChange={(e) => updateRowField(idx, "pf", parseFloat(e.target.value) || 0)}
+                          style={{ width: "100%" }}
+                        />
+                      </label>
+                      <label>
+                        <Text size="1" color="gray" mb="1" as="div">CIT</Text>
+                        <TextField.Root
+                          type="number"
+                          size="2"
+                          value={row.cit || ""}
+                          onChange={(e) => updateRowField(idx, "cit", parseFloat(e.target.value) || 0)}
+                          style={{ width: "100%" }}
+                        />
+                      </label>
+                      <Box style={{ borderTop: "1px solid var(--gray-a3)", paddingTop: 12 }}>
+                        <Flex direction="column" gap="2">
+                          <Flex justify="between">
+                            <Text size="1" color="indigo" weight="bold">TDS (Old)</Text>
+                            <Text size="1" color="indigo" weight="bold">{npr(oldRowResult?.tds || 0, language, "")}</Text>
+                          </Flex>
+                          <Flex justify="between">
+                            <Text size="1" color="teal" weight="bold">TDS (New)</Text>
+                            <Text size="1" color="teal" weight="bold">{npr(newRowResult?.tds || 0, language, "")}</Text>
+                          </Flex>
+                          <Flex justify="between">
+                            <Text size="1" color="gray">Net Salary (Old)</Text>
+                            <Text size="1" color="gray">{npr(oldRowResult?.netSalary || 0, language, "")}</Text>
+                          </Flex>
+                          <Flex justify="between">
+                            <Text size="1" color="gray">Net Salary (New)</Text>
+                            <Text size="1" color="gray">{npr(newRowResult?.netSalary || 0, language, "")}</Text>
+                          </Flex>
+                        </Flex>
+                      </Box>
                     </Flex>
-                  </Table.Cell>
-                </Table.Row>
+                  </Box>
+                </Card>
               );
             })}
-          </Table.Body>
-        </Table.Root>
+          </Flex>
+        )}
       </Box>
 
       {/* Savings Hero Banner */}
