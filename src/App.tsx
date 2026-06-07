@@ -65,7 +65,7 @@ import Calculation from "./components/Calculation";
 import MonthlyEntry from "./components/MonthlyEntry";
 import Information from "./components/Information";
 import DeveloperInfo from "./components/DeveloperInfo";
-import { EditIcon, ChartIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon, TableIcon } from "./components/icons";
+import { EditIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon, TableIcon } from "./components/icons";
 
 declare global {
   interface Window {
@@ -108,8 +108,8 @@ export default function App() {
   const { language, setLanguage, t } = useTranslation();
 
   const NAV = [
-    { key: "entry" as const, label: "Annual Tax Calculation", Icon: EditIcon },
-    { key: "variable" as const, label: "12-Month Variable Tax Calculation", Icon: TableIcon },
+    { key: "entry" as const, label: t('annualTaxCalc'), Icon: EditIcon },
+    { key: "variable" as const, label: t('variableTaxCalc'), Icon: TableIcon },
   ];
 
   const [input, setInput] = useState<TaxInput>(DEFAULT_INPUT);

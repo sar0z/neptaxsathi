@@ -4,13 +4,14 @@ import { DownloadIcon, Share1Icon } from "@radix-ui/react-icons";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
-import type { TaxInput, RegimeResult } from "../engine/types";
-import { calculateRegime, npr } from "../engine/taxEngine";
+import type { TaxInput, RegimeResult, VariableTaxInput } from "../engine/types";
+import { calculateRegime, calculateVariableTDS, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import { useTranslation } from "../i18n/LanguageContext";
 
 interface ShareTaxDetailsProps {
-  input: TaxInput;
+  input?: TaxInput;
+  variableInput?: VariableTaxInput;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -34,83 +35,154 @@ function plainTextSummary(
   rows: RegimeShareSummary[],
   currencyFormatter: (amount: number) => string
 ) {
+  const col1Width = 30;
+  const col2Width = 16;
+  const col3Width = 16;
+
+  const padRight = (str: string, length: number) => str.padEnd(length, " ");
+  const padLeft = (str: string, length: number) => str.padStart(length, " ");
+
+  const header = `| ${padRight("Metric", col1Width)} | ${padLeft(rows[0].label, col2Width)} | ${padLeft(rows[1].label, col3Width)} |`;
+  const separator = `| :${"-".repeat(col1Width - 1)} | ${"-".repeat(col2Width - 1)}: | ${"-".repeat(col3Width - 1)}: |`;
+
+  const formatRow = (metric: string, oldVal: string, newVal: string) => {
+    return `| ${padRight(metric, col1Width)} | ${padLeft(oldVal, col2Width)} | ${padLeft(newVal, col3Width)} |`;
+  };
+
+  const formattedRows = [
+    formatRow("Yearly income tax", currencyFormatter(rows[0].result.totalTaxYearly), currencyFormatter(rows[1].result.totalTaxYearly)),
+    formatRow("Monthly tax (Avg)", currencyFormatter(rows[0].monthlyTax), currencyFormatter(rows[1].monthlyTax)),
+    formatRow("Monthly salary (Avg)", currencyFormatter(rows[0].monthlySalary), currencyFormatter(rows[1].monthlySalary)),
+    formatRow("Monthly retirement deductions", currencyFormatter(rows[0].monthlyRetirement), currencyFormatter(rows[1].monthlyRetirement)),
+    formatRow("Monthly cash in hand (Avg)", currencyFormatter(rows[0].monthlyCashInHand), currencyFormatter(rows[1].monthlyCashInHand)),
+    formatRow("Effective rate", formatPercent(rows[0].result.effectiveRate), formatPercent(rows[1].result.effectiveRate)),
+  ];
+
   return [
     title,
     "",
-    ...rows.flatMap((row) => [
-      row.label,
-      `Yearly income tax: ${currencyFormatter(row.result.totalTaxYearly)}`,
-      `Monthly tax: ${currencyFormatter(row.monthlyTax)}`,
-      `Monthly salary: ${currencyFormatter(row.monthlySalary)}`,
-      `Monthly retirement deductions: ${currencyFormatter(row.monthlyRetirement)}`,
-      `Monthly cash in hand: ${currencyFormatter(row.monthlyCashInHand)}`,
-      `Effective rate: ${formatPercent(row.result.effectiveRate)}`,
-      "",
-    ]),
+    header,
+    separator,
+    ...formattedRows,
+    "",
+    "Prepared using Nepal Tax Calculator"
   ].join("\n");
 }
 
 function PrintableLayout({
   input,
+  variableInput,
   summaries,
 }: {
-  input: TaxInput;
+  input?: TaxInput;
+  variableInput?: VariableTaxInput;
   summaries: RegimeShareSummary[];
 }) {
   const { t, language } = useTranslation();
   const currency = t("currency");
-  const months = safeMonths(input.months);
+  const isVariable = !!variableInput;
+  const months = isVariable ? variableInput!.monthsData.length : safeMonths(input!.months);
+
+  const oldVarResult = useMemo(() => {
+    if (variableInput) return calculateVariableTDS(variableInput, oldRegime);
+    return null;
+  }, [variableInput]);
+
+  const newVarResult = useMemo(() => {
+    if (variableInput) return calculateVariableTDS(variableInput, newRegime);
+    return null;
+  }, [variableInput]);
 
   const yearlyComparisonRows = [
     {
       label: t("incomeTax"),
-      old: summaries[0].result.totalTaxYearly,
-      new: summaries[1].result.totalTaxYearly,
+      old: isVariable ? oldVarResult!.totalTax : summaries[0].result.totalTaxYearly,
+      new: isVariable ? newVarResult!.totalTax : summaries[1].result.totalTaxYearly,
     },
     {
       label: t("taxableSalary"),
-      old: summaries[0].result.taxableIncome,
-      new: summaries[1].result.taxableIncome,
+      old: isVariable ? oldVarResult!.taxableIncome : summaries[0].result.taxableIncome,
+      new: isVariable ? newVarResult!.taxableIncome : summaries[1].result.taxableIncome,
     },
   ];
 
-  const monthlyComparisonRows = [
-    {
-      label: t("monthlySalary"),
-      old: input.income.salary / months,
-      new: input.income.salary / months,
-    },
-    {
-      label: t("ssf"),
-      old: input.deductions.ssf / months,
-      new: input.deductions.ssf / months,
-    },
-    {
-      label: t("providentFund"),
-      old: input.deductions.pf / months,
-      new: input.deductions.pf / months,
-    },
-    {
-      label: t("cit"),
-      old: input.deductions.cit / months,
-      new: input.deductions.cit / months,
-    },
-    {
-      label: t("incomeTax"),
-      old: summaries[0].monthlyTax,
-      new: summaries[1].monthlyTax,
-    },
-    {
-      label: t("netSalary"),
-      old: summaries[0].result.netIncomeMonthly,
-      new: summaries[1].result.netIncomeMonthly,
-    },
-    {
-      label: t("cashInHand"),
-      old: summaries[0].monthlyCashInHand,
-      new: summaries[1].monthlyCashInHand,
-    },
-  ];
+  const monthlyComparisonRows = isVariable
+    ? [
+        {
+          label: t("monthlySalary") + " (Avg)",
+          old: oldVarResult!.totalGrossIncome / months,
+          new: newVarResult!.totalGrossIncome / months,
+        },
+        {
+          label: t("ssf") + " (Avg)",
+          old: variableInput!.monthsData.reduce((sum, r) => sum + r.ssf, 0) / months,
+          new: variableInput!.monthsData.reduce((sum, r) => sum + r.ssf, 0) / months,
+        },
+        {
+          label: t("providentFund") + " (Avg)",
+          old: variableInput!.monthsData.reduce((sum, r) => sum + r.pf, 0) / months,
+          new: variableInput!.monthsData.reduce((sum, r) => sum + r.pf, 0) / months,
+        },
+        {
+          label: t("cit") + " (Avg)",
+          old: variableInput!.monthsData.reduce((sum, r) => sum + r.cit, 0) / months,
+          new: variableInput!.monthsData.reduce((sum, r) => sum + r.cit, 0) / months,
+        },
+        {
+          label: t("incomeTax") + " (Avg)",
+          old: oldVarResult!.totalTax / months,
+          new: newVarResult!.totalTax / months,
+        },
+        {
+          label: t("netSalary") + " (Avg)",
+          old: oldVarResult!.monthlyRows.reduce((sum, r) => sum + r.netSalary, 0) / months,
+          new: newVarResult!.monthlyRows.reduce((sum, r) => sum + r.netSalary, 0) / months,
+        },
+        {
+          label: t("cashInHand") + " (Avg)",
+          old: oldVarResult!.netTakeHome / months,
+          new: newVarResult!.netTakeHome / months,
+        },
+      ]
+    : [
+        {
+          label: t("monthlySalary"),
+          old: input!.income.salary / months,
+          new: input!.income.salary / months,
+        },
+        {
+          label: t("ssf"),
+          old: input!.deductions.ssf / months,
+          new: input!.deductions.ssf / months,
+        },
+        {
+          label: t("providentFund"),
+          old: input!.deductions.pf / months,
+          new: input!.deductions.pf / months,
+        },
+        {
+          label: t("cit"),
+          old: input!.deductions.cit / months,
+          new: input!.deductions.cit / months,
+        },
+        {
+          label: t("incomeTax"),
+          old: summaries[0].monthlyTax,
+          new: summaries[1].monthlyTax,
+        },
+        {
+          label: t("netSalary"),
+          old: summaries[0].result.netIncomeMonthly,
+          new: summaries[1].result.netIncomeMonthly,
+        },
+        {
+          label: t("cashInHand"),
+          old: summaries[0].monthlyCashInHand,
+          new: summaries[1].monthlyCashInHand,
+        },
+      ];
+
+  const taxpayerType = isVariable ? variableInput!.taxpayerType : input!.taxpayerType;
 
   return (
     <Box className="share-sheet">
@@ -131,7 +203,7 @@ function PrintableLayout({
             {t("appTitle")}
           </Text>
           <Text size="1" color="gray" as="div">
-            {input.taxpayerType === "couple" ? t("couple") : t("individual")} · {months} {t("month")}
+            {taxpayerType === "couple" ? t("couple") : t("individual")} · {months} {t("month")}
           </Text>
         </Box>
       </Flex>
@@ -151,13 +223,13 @@ function PrintableLayout({
               </Text>
             </Flex>
             <Text size="1" color="gray" as="div" style={{ marginTop: 6 }}>
-              {t("cashInHand")} ({t("monthly")})
+              {t("cashInHand")} ({t("monthly")} Avg)
             </Text>
             <Separator size="4" my="3" />
             <Flex justify="between" gap="3">
               <Box>
                 <Text size="1" color="gray" as="div">
-                  {t("monthlyTax")}
+                  {t("monthlyTax")} (Avg)
                 </Text>
                 <Text size="2" weight="bold" className="tnum" style={{ wordBreak: "break-all" }}>
                   <Text size="1" color="gray" style={{ opacity: 0.7 }}>{currency} </Text>
@@ -240,34 +312,79 @@ function PrintableLayout({
   );
 }
 
-export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxDetailsProps) {
+export default function ShareTaxDetails({ input, variableInput, open, onOpenChange }: ShareTaxDetailsProps) {
   const { t, language } = useTranslation();
   const currency = t("currency");
   const printRef = useRef<HTMLDivElement>(null);
-  const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
-  const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
-  const months = safeMonths(input.months);
-  const monthlySalary = input.income.salary / months;
-  const monthlyRetirement =
-    (input.deductions.ssf + input.deductions.pf + input.deductions.cit) / months;
+  const isVariable = !!variableInput;
+
+  const oldResult = useMemo(() => {
+    if (isVariable && variableInput) {
+      return calculateVariableTDS(variableInput, oldRegime).regimeResult;
+    }
+    if (input) {
+      return calculateRegime(input, oldRegime);
+    }
+    throw new Error("Either input or variableInput must be provided");
+  }, [input, isVariable, variableInput]);
+
+  const newResult = useMemo(() => {
+    if (isVariable && variableInput) {
+      return calculateVariableTDS(variableInput, newRegime).regimeResult;
+    }
+    if (input) {
+      return calculateRegime(input, newRegime);
+    }
+    throw new Error("Either input or variableInput must be provided");
+  }, [input, isVariable, variableInput]);
+
+  const oldVarResult = useMemo(() => {
+    if (isVariable && variableInput) {
+      return calculateVariableTDS(variableInput, oldRegime);
+    }
+    return null;
+  }, [isVariable, variableInput]);
+
+  const newVarResult = useMemo(() => {
+    if (isVariable && variableInput) {
+      return calculateVariableTDS(variableInput, newRegime);
+    }
+    return null;
+  }, [isVariable, variableInput]);
+
+  const months = isVariable
+    ? variableInput!.monthsData.length
+    : safeMonths(input!.months);
+
+  const monthlySalary = isVariable
+    ? oldVarResult!.totalGrossIncome / months
+    : input!.income.salary / months;
+
+  const monthlyRetirement = isVariable
+    ? oldVarResult!.totalDeductions / months
+    : (input!.deductions.ssf + input!.deductions.pf + input!.deductions.cit) / months;
 
   const summaries: RegimeShareSummary[] = [
     {
       label: t("oldSlab"),
       result: oldResult,
-      monthlyTax: oldResult.totalTaxMonthly,
+      monthlyTax: isVariable ? oldVarResult!.totalTax / months : oldResult.totalTaxMonthly,
       monthlySalary,
       monthlyRetirement,
-      monthlyCashInHand: monthlySalary - oldResult.totalTaxMonthly - monthlyRetirement,
+      monthlyCashInHand: isVariable
+        ? oldVarResult!.netTakeHome / months
+        : (monthlySalary - oldResult.totalTaxMonthly - monthlyRetirement),
       color: "indigo",
     },
     {
       label: t("newSlab"),
       result: newResult,
-      monthlyTax: newResult.totalTaxMonthly,
+      monthlyTax: isVariable ? newVarResult!.totalTax / months : newResult.totalTaxMonthly,
       monthlySalary,
       monthlyRetirement,
-      monthlyCashInHand: monthlySalary - newResult.totalTaxMonthly - monthlyRetirement,
+      monthlyCashInHand: isVariable
+        ? newVarResult!.netTakeHome / months
+        : (monthlySalary - newResult.totalTaxMonthly - monthlyRetirement),
       color: "teal",
     },
   ];
@@ -278,8 +395,8 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     );
 
     try {
-      if (navigator.share) {
-        await navigator.share({
+      if (typeof navigator !== "undefined" && (navigator as any).share) {
+        await (navigator as any).share({
           title: t("sharePreviewTitle"),
           text,
         });
@@ -306,9 +423,8 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     window.umami?.track("tax-details-image-generation-started");
 
     try {
-      // Capture the element as canvas with high quality
       const canvas = await html2canvas(printRef.current, {
-        scale: 2, // Higher quality
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
@@ -318,7 +434,6 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
         removeContainer: true,
       });
 
-      // Convert canvas to blob
       canvas.toBlob(async (blob) => {
         if (!blob) {
           window.umami?.track("tax-details-image-error");
@@ -326,12 +441,10 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
           return;
         }
 
-        // Generate filename with date
         const date = new Date().toISOString().split("T")[0];
-        const taxpayerType = input.taxpayerType === "couple" ? "Couple" : "Individual";
+        const taxpayerType = (isVariable ? variableInput!.taxpayerType : input!.taxpayerType) === "couple" ? "Couple" : "Individual";
         const filename = `Nepal_Tax_Report_${taxpayerType}_${date}.png`;
 
-        // Create file for sharing
         const file = new File([blob], filename, { type: "image/png" });
 
         try {
@@ -342,7 +455,6 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
             });
             window.umami?.track("tax-details-image-shared");
           } else {
-            // Fallback: download the image
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
@@ -372,10 +484,8 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     window.umami?.track("tax-details-pdf-generation-started");
 
     try {
-      // Capture the element as canvas with high quality
-      // html2canvas-pro natively supports modern color functions (color(), oklch(), lab())
       const canvas = await html2canvas(printRef.current, {
-        scale: 2, // Higher quality
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
@@ -385,28 +495,23 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
         removeContainer: true,
       });
 
-      // Calculate PDF dimensions (A4 size)
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      const imgWidth = 210;
+      const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Create PDF
       const pdf = new jsPDF({
         orientation: imgHeight > pageHeight ? "portrait" : "portrait",
         unit: "mm",
         format: "a4",
       });
 
-      // Add image to PDF
       const imgData = canvas.toDataURL("image/png");
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Add additional pages if content is longer than one page
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -414,12 +519,10 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
         heightLeft -= pageHeight;
       }
 
-      // Generate filename with date
       const date = new Date().toISOString().split("T")[0];
-      const taxpayerType = input.taxpayerType === "couple" ? "Couple" : "Individual";
+      const taxpayerType = (isVariable ? variableInput!.taxpayerType : input!.taxpayerType) === "couple" ? "Couple" : "Individual";
       const filename = `Nepal_Tax_Report_${taxpayerType}_${date}.pdf`;
 
-      // Download the PDF
       pdf.save(filename);
 
       window.umami?.track("tax-details-pdf-downloaded");
@@ -449,7 +552,7 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
             </Box>
             <Dialog.Close>
               <Button variant="ghost" color="gray" size="2" style={{ borderRadius: 8, cursor: "pointer" }}>
-                x
+                ✕
               </Button>
             </Dialog.Close>
           </Flex>
@@ -457,7 +560,7 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
 
         <Box p="4" style={{ maxHeight: "70dvh", overflowY: "auto", background: "var(--gray-2)" }}>
           <Box ref={printRef}>
-            <PrintableLayout input={input} summaries={summaries} />
+            <PrintableLayout input={input} variableInput={variableInput} summaries={summaries} />
           </Box>
         </Box>
 
@@ -485,7 +588,7 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
             </Button>
             <Button color="indigo" onClick={handleShare} style={{ cursor: "pointer" }}>
               <Share1Icon width="16" height="16" />
-              {navigator.share ? t("shareNow") : t("copyShareText")}
+              {typeof navigator !== "undefined" && (navigator as any).share ? t("shareNow") : t("copyShareText")}
             </Button>
           </Flex>
         </Box>
@@ -493,3 +596,4 @@ export default function ShareTaxDetails({ input, open, onOpenChange }: ShareTaxD
     </Dialog.Root>
   );
 }
+

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Flex, Text, Heading, Box, Button, Table, Grid, Switch, TextField, Card, Badge, Dialog, Popover } from "@radix-ui/themes";
-import { PlusIcon, Cross2Icon, TrashIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
+import { PlusIcon, TrashIcon, ChevronDownIcon, Share1Icon } from "@radix-ui/react-icons";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import Calculator from "./Calculator";
 
@@ -9,6 +9,7 @@ import { useTranslation } from "../i18n/LanguageContext";
 import { calculateVariableTDS, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import RegimeView from "./RegimeView";
+import ShareTaxDetails from "./ShareTaxDetails";
 
 interface Props {
   onBack?: () => void;
@@ -85,6 +86,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
   const [calculatorTarget, setCalculatorTarget] = useState<string | null>(null);
   const [calculatorInitialValue, setCalculatorInitialValue] = useState(0);
   const [openAccordionId, setOpenAccordionId] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const openCalculator = (field: string, value: number) => {
     setCalculatorTarget(field);
@@ -94,7 +96,17 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
 
   const handleCalculatorResult = (value: number) => {
     if (calculatorTarget) {
-      setVarInput((prev) => ({ ...prev, [calculatorTarget]: value }));
+      if (calculatorTarget === "fillBasic") {
+        setFillBasic(value === 0 ? "" : value.toString());
+      } else if (calculatorTarget === "fillSSF") {
+        setFillSSF(value === 0 ? "" : value.toString());
+      } else if (calculatorTarget === "fillPF") {
+        setFillPF(value === 0 ? "" : value.toString());
+      } else if (calculatorTarget === "fillCIT") {
+        setFillCIT(value === 0 ? "" : value.toString());
+      } else {
+        setVarInput((prev) => ({ ...prev, [calculatorTarget]: value }));
+      }
     }
   };
 
@@ -197,6 +209,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
       annualAllowance: 0,
       annualBonus: 0,
       monthsData: MONTH_NAMES.map((m) => ({
+        id: crypto.randomUUID(),
         monthName: m,
         basicSalary: 0,
         ssf: 0,
@@ -247,16 +260,31 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
       {/* Header Info */}
       <Flex align="center" gap="3" justify="between" wrap="wrap">
         <Heading size="6">12-Month Variable Salary Entry</Heading>
-        <Badge color="indigo" size="2">
-          Variable Income Mode
-        </Badge>
+        <Flex gap="3" align="center">
+          <Button
+            size="2"
+            variant="soft"
+            color="indigo"
+            onClick={() => {
+              setShareOpen(true);
+              window.umami?.track("share-preview-opened-variable");
+            }}
+            style={{ cursor: "pointer" }}
+          >
+            <Share1Icon width="16" height="16" />
+            {t("shareTaxDetails")}
+          </Button>
+          <Badge color="indigo" size="2">
+            Variable Income Mode
+          </Badge>
+        </Flex>
       </Flex>
 
       {/* Global Config Cards - Desktop Only */}
       {isDesktop && (
         <Grid columns={{ initial: "1", md: "3" }} gap="4">
         {/* Taxpayer Config */}
-        <Card p="4">
+        <Card size="3">
           <Flex direction="column" gap="3">
             <SectionLabel>{t('taxpayerType')}</SectionLabel>
             <Flex gap="2">
@@ -320,7 +348,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
         </Card>
 
         {/* Annual Deductions */}
-        <Card p="4">
+        <Card size="3">
           <Flex direction="column" gap="3">
             <SectionLabel>Annual Income & Deductions</SectionLabel>
             <Flex direction="column" gap="3">
@@ -504,7 +532,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
         </Card>
 
         {/* Quick Fill Actions */}
-        <Card p="4">
+        <Card size="3">
           <Flex direction="column" gap="3">
             <SectionLabel>{t('quickFillHelpers')}</SectionLabel>
             <Flex direction="column" gap="3">
@@ -517,7 +545,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                   value={formatNumberWithCommas(parseFloat(fillBasic) || 0, language)}
                   size="3"
                   radius="large"
-                  onChange={(e) => setFillBasic(e.target.value)}
+                  onChange={(e) => {
+                    const parsed = parseFormattedNumber(e.target.value);
+                    setFillBasic(parsed === 0 ? "" : parsed.toString());
+                  }}
                   style={{ textAlign: "right" }}
                   className="tnum"
                 >
@@ -553,7 +584,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                   disabled={!varInput.contributingSSF}
                   style={{ opacity: varInput.contributingSSF ? 1 : 0.45, textAlign: "right" }}
                   className="tnum"
-                  onChange={(e) => setFillSSF(e.target.value)}
+                  onChange={(e) => {
+                    const parsed = parseFormattedNumber(e.target.value);
+                    setFillSSF(parsed === 0 ? "" : parsed.toString());
+                  }}
                 >
                   <TextField.Slot>
                     <Text size="1" color="gray">{currency}</Text>
@@ -584,7 +618,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                   value={formatNumberWithCommas(parseFloat(fillPF) || 0, language)}
                   size="3"
                   radius="large"
-                  onChange={(e) => setFillPF(e.target.value)}
+                  onChange={(e) => {
+                    const parsed = parseFormattedNumber(e.target.value);
+                    setFillPF(parsed === 0 ? "" : parsed.toString());
+                  }}
                   style={{ textAlign: "right" }}
                   className="tnum"
                 >
@@ -617,7 +654,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                   value={formatNumberWithCommas(parseFloat(fillCIT) || 0, language)}
                   size="3"
                   radius="large"
-                  onChange={(e) => setFillCIT(e.target.value)}
+                  onChange={(e) => {
+                    const parsed = parseFormattedNumber(e.target.value);
+                    setFillCIT(parsed === 0 ? "" : parsed.toString());
+                  }}
                   style={{ textAlign: "right" }}
                   className="tnum"
                 >
@@ -1082,7 +1122,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
       {/* Side-by-Side Comparison Summary */}
       <Grid columns={{ initial: "1", md: "2" }} gap="4">
         {/* Old Regime Result Card */}
-        <Card p="4" style={{ borderColor: oldIsBetter ? "var(--indigo-8)" : "transparent" }}>
+        <Card size="3" style={{ borderColor: oldIsBetter ? "var(--indigo-8)" : "transparent" }}>
           <Flex direction="column" gap="3">
             <Flex align="center" justify="between">
               <Heading size="4" color="indigo">
@@ -1112,7 +1152,7 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
         </Card>
 
         {/* New Regime Result Card */}
-        <Card p="4" style={{ borderColor: newIsBetter ? "var(--teal-8)" : "transparent" }}>
+        <Card size="3" style={{ borderColor: newIsBetter ? "var(--teal-8)" : "transparent" }}>
           <Flex direction="column" gap="3">
             <Flex align="center" justify="between">
               <Heading size="4" color="teal">
@@ -1536,7 +1576,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                         value={formatNumberWithCommas(parseFloat(fillBasic) || 0, language)}
                         size="3"
                         radius="large"
-                        onChange={(e) => setFillBasic(e.target.value)}
+                        onChange={(e) => {
+                          const parsed = parseFormattedNumber(e.target.value);
+                          setFillBasic(parsed === 0 ? "" : parsed.toString());
+                        }}
                         style={{ textAlign: "right" }}
                         className="tnum"
                       >
@@ -1572,7 +1615,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                         disabled={!varInput.contributingSSF}
                         style={{ opacity: varInput.contributingSSF ? 1 : 0.45, textAlign: "right" }}
                         className="tnum"
-                        onChange={(e) => setFillSSF(e.target.value)}
+                        onChange={(e) => {
+                          const parsed = parseFormattedNumber(e.target.value);
+                          setFillSSF(parsed === 0 ? "" : parsed.toString());
+                        }}
                       >
                         <TextField.Slot>
                           <Text size="1" color="gray">{currency}</Text>
@@ -1603,7 +1649,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                         value={formatNumberWithCommas(parseFloat(fillPF) || 0, language)}
                         size="3"
                         radius="large"
-                        onChange={(e) => setFillPF(e.target.value)}
+                        onChange={(e) => {
+                          const parsed = parseFormattedNumber(e.target.value);
+                          setFillPF(parsed === 0 ? "" : parsed.toString());
+                        }}
                         style={{ textAlign: "right" }}
                         className="tnum"
                       >
@@ -1636,7 +1685,10 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
                         value={formatNumberWithCommas(parseFloat(fillCIT) || 0, language)}
                         size="3"
                         radius="large"
-                        onChange={(e) => setFillCIT(e.target.value)}
+                        onChange={(e) => {
+                          const parsed = parseFormattedNumber(e.target.value);
+                          setFillCIT(parsed === 0 ? "" : parsed.toString());
+                        }}
                         style={{ textAlign: "right" }}
                         className="tnum"
                       >
@@ -1693,6 +1745,12 @@ export default function MonthlyEntry({ onBack: _onBack }: Props) {
         onOpenChange={setCalculatorOpen}
         initialValue={calculatorInitialValue}
         onResult={handleCalculatorResult}
+      />
+
+      <ShareTaxDetails
+        variableInput={varInput}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
       />
     </Flex>
   );

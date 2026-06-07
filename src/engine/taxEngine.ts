@@ -10,7 +10,6 @@ import type {
   RegimeResult,
   DeductionComputation,
   VariableTaxInput,
-  MonthlyInputRow,
 } from "./types";
 
 // ---------- formatting ----------
@@ -214,36 +213,36 @@ export function calculateVariableTDS(
 ): VariableRegimeResult {
   const monthsData = input.monthsData;
   const numMonths = monthsData.length;
-  
+
   let cumulativeBasic = 0;
   let cumulativeSSF = 0;
   let cumulativePF = 0;
   let cumulativeCIT = 0;
-  
+
   const monthlyRows: MonthlyResultRow[] = [];
   let sumTdsPaid = 0;
 
   for (let idx = 0; idx < numMonths; idx++) {
     const m = idx + 1;
     const row = monthsData[idx];
-    
+
     cumulativeBasic += row.basicSalary;
     cumulativeSSF += row.ssf;
     cumulativePF += row.pf;
     cumulativeCIT += row.cit;
-    
+
     // Project annual values based on current month's salary for the remaining months
     const remaining = 12 - m;
     const projectedSalary = cumulativeBasic + (row.basicSalary * remaining);
-    
+
     // Allowance and bonus are annual — always use the full annual figure in projection
     const projectedAllowance = input.annualAllowance;
     const projectedBonus = input.annualBonus;
-    
+
     const projectedSSF = cumulativeSSF + (row.ssf * remaining);
     const projectedPF = cumulativePF + (row.pf * remaining);
     const projectedCIT = cumulativeCIT + (row.cit * remaining);
-    
+
     // Build projected annual TaxInput
     const projectedInput: TaxInput = {
       fiscalYear: input.fiscalYear,
@@ -266,10 +265,10 @@ export function calculateVariableTDS(
         donations: input.donations,
       }
     };
-    
+
     // Calculate projected annual tax
     const annualRes = calculateRegime(projectedInput, regime);
-    
+
     // Distribute remaining projected tax equally across remaining months (including current).
     // This ensures a salary increase doesn't cause a spike — the extra burden is
     // spread evenly from the month of change through to Ashadh.
@@ -277,12 +276,12 @@ export function calculateVariableTDS(
     const remainingTax = Math.max(0, annualRes.totalTaxYearly - sumTdsPaid);
     const monthlyTds = round2(remainingTax / remainingMonths);
     sumTdsPaid += monthlyTds;
-    
+
     // Net Salary = Basic - monthly deductions (SSF, PF, CIT) - TDS
     // Bonus and allowance are not reflected in monthly take-home (paid separately/annually)
     const monthlyDeds = row.ssf + row.pf + row.cit;
     const netSalary = Math.max(0, round2(row.basicSalary - monthlyDeds - monthlyTds));
-    
+
     monthlyRows.push({
       monthName: row.monthName,
       basicSalary: row.basicSalary,
@@ -296,7 +295,7 @@ export function calculateVariableTDS(
 
   // Calculate actual annual totals from all months
   const totalGrossIncome = cumulativeBasic + input.annualAllowance + input.annualBonus + input.otherIncome;
-  
+
   // Calculate final actual annual regime result using the sum of all monthly actuals
   const finalAnnualInput: TaxInput = {
     fiscalYear: input.fiscalYear,

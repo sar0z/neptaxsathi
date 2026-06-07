@@ -20,6 +20,8 @@ export const translations = {
     navResults: 'Results',
     navInfo: 'Info',
     backToEntry: 'Back to Entry',
+    annualTaxCalc: 'Annual Tax Calculation',
+    variableTaxCalc: '12-Month Variable Tax Calculation',
     
     // Quick Fill Helpers
     quickFillHelpers: 'Quick Fill Helpers',
@@ -196,6 +198,8 @@ export const translations = {
     navResults: 'नतिजा',
     navInfo: 'जानकारी',
     backToEntry: 'प्रविष्टिमा फर्कनुहोस्',
+    annualTaxCalc: 'वार्षिक कर गणना',
+    variableTaxCalc: '१२-महिना चर कर गणना',
     
     // Quick Fill Helpers
     quickFillHelpers: 'द्रुत भर्ने सहायक',
