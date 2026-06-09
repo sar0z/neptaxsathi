@@ -117,7 +117,29 @@ export default function App() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [appInfoOpen, setAppInfoOpen] = useState(false);
   const isDesktop = useIsDesktop();
-  const tabIndex = TABS.indexOf(tab);
+
+  // Comparison toggle state (persisted)
+  const [comparisonEnabled, setComparisonEnabled] = useState<boolean>(() =>
+    localStorage.getItem("comparison-enabled") !== "false"
+  );
+  // Selected regime for single-slab mode (default "old" = current FY 2082/83)
+  const [selectedRegime, setSelectedRegime] = useState<"old" | "new">(() => {
+    const stored = localStorage.getItem("selected-regime");
+    return stored === "new" ? "new" : "old";
+  });
+
+  const handleComparisonToggle = (v: boolean) => {
+    setComparisonEnabled(v);
+    localStorage.setItem("comparison-enabled", String(v));
+    window.umami?.track("comparison-toggle", { enabled: v });
+  };
+
+  const handleRegimeChange = (r: "old" | "new") => {
+    setSelectedRegime(r);
+    localStorage.setItem("selected-regime", r);
+    window.umami?.track("regime-changed", { regime: r });
+  };
+
 
   // User ID generation (Removed for now)
 
@@ -310,7 +332,12 @@ export default function App() {
           tab === "variable" ? (
             <Box style={{ flex: 1, overflowY: "auto" }}>
               <Container size="4" px="6" py="6">
-                <MonthlyEntry onBack={() => setTab("entry")} />
+                <MonthlyEntry
+                  onBack={() => setTab("entry")}
+                  selectedRegime={selectedRegime}
+                  onRegimeChange={handleRegimeChange}
+                />
+
               </Container>
             </Box>
           ) : tab === "info" ? (
@@ -345,7 +372,13 @@ export default function App() {
                       {t('resultsSubtitle')}
                     </Text>
                   </Box>
-                  <Calculation input={input} />
+                  <Calculation
+                    input={input}
+                    comparisonEnabled={comparisonEnabled}
+                    onComparisonToggle={handleComparisonToggle}
+                    selectedRegime={selectedRegime}
+                    onRegimeChange={handleRegimeChange}
+                  />
                 </Container>
               </Box>
             </Flex>
@@ -353,31 +386,29 @@ export default function App() {
         ) : (
           /* ===== Mobile: sliding tabs + custom bottom nav ===== */
           <Flex direction="column" style={{ flex: 1, overflow: "hidden" }}>
-            <Box className="slider-viewport" style={{ flex: 1 }}>
-              <Box
-                className="slider-track"
-                style={{ transform: `translateX(-${tabIndex * 25}%)`, width: "400%" }}
-              >
-                <Box className="slider-slide" style={{ width: "25%" }}>
-                  <Box p="4">
-                    <DataEntry input={input} setInput={setInput} onCalculate={() => { setTab("calc"); window.umami?.track("calculate-clicked", { taxpayerType: input.taxpayerType }); }} />
-                  </Box>
-                </Box>
-                <Box className="slider-slide" style={{ width: "25%" }}>
-                  <Box p="4">
-                    <MonthlyEntry onBack={() => setTab("entry")} />
-                  </Box>
-                </Box>
-                <Box className="slider-slide" style={{ width: "25%" }}>
-                  <Box p="4">
-                    <Calculation input={input} onBack={() => setTab("entry")} />
-                  </Box>
-                </Box>
-                <Box className="slider-slide" style={{ width: "25%" }}>
-                  <Box p="4">
-                    <Information />
-                  </Box>
-                </Box>
+            <Box style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+              <Box style={{ display: tab === "entry" ? "block" : "none" }} p="4">
+                <DataEntry input={input} setInput={setInput} onCalculate={() => { setTab("calc"); window.umami?.track("calculate-clicked", { taxpayerType: input.taxpayerType }); }} />
+              </Box>
+              <Box style={{ display: tab === "variable" ? "block" : "none" }} p="4">
+                <MonthlyEntry
+                  onBack={() => setTab("entry")}
+                  selectedRegime={selectedRegime}
+                  onRegimeChange={handleRegimeChange}
+                />
+              </Box>
+              <Box style={{ display: tab === "calc" ? "block" : "none" }} p="4">
+                <Calculation
+                  input={input}
+                  onBack={() => setTab("entry")}
+                  comparisonEnabled={comparisonEnabled}
+                  onComparisonToggle={handleComparisonToggle}
+                  selectedRegime={selectedRegime}
+                  onRegimeChange={handleRegimeChange}
+                />
+              </Box>
+              <Box style={{ display: tab === "info" ? "block" : "none" }} p="4">
+                <Information />
               </Box>
             </Box>
 

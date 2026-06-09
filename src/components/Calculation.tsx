@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Flex, Text, Heading, Box, Button, Table, Grid, Badge } from "@radix-ui/themes";
+import { Flex, Text, Heading, Box, Button, Table, Grid, Badge, Switch, Select } from "@radix-ui/themes";
 import { ArrowDownIcon, ArrowUpIcon, Share1Icon } from "@radix-ui/react-icons";
+
 import type { TaxInput } from "../engine/types";
 import { calculateRegime, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
@@ -12,15 +13,24 @@ import ShareTaxDetails from "./ShareTaxDetails";
 interface Props {
   input: TaxInput;
   onBack?: () => void;
+  comparisonEnabled: boolean;
+  onComparisonToggle: (v: boolean) => void;
+  selectedRegime: "old" | "new";
+  onRegimeChange: (r: "old" | "new") => void;
 }
 
-export default function Calculation({ input, onBack: _onBack }: Props) {
+
+export default function Calculation({ input, onBack: _onBack, comparisonEnabled, onComparisonToggle, selectedRegime, onRegimeChange }: Props) {
+
   const { t, language } = useTranslation();
   const currency = t('currency');
 
   const [shareOpen, setShareOpen] = useState(false);
   const oldResult = useMemo(() => calculateRegime(input, oldRegime), [input]);
   const newResult = useMemo(() => calculateRegime(input, newRegime), [input]);
+
+  const activeResult = selectedRegime === "old" ? oldResult : newResult;
+  const activeColor: "indigo" | "teal" = selectedRegime === "old" ? "indigo" : "teal";
 
   const savingsYearly = oldResult.totalTaxYearly - newResult.totalTaxYearly;
   const savingsMonthly = oldResult.totalTaxMonthly - newResult.totalTaxMonthly;
@@ -31,7 +41,11 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
   const months = input.months > 0 ? input.months : 12;
   const retirementYearly = input.deductions.ssf + input.deductions.pf + input.deductions.cit;
 
+  // When comparison is off, use the active regime's result for summary cards/deductions
+  const displayResult = comparisonEnabled ? oldResult : activeResult;
+
   const accent = neutral ? "gray" : newIsBetter ? "teal" : "indigo";
+
 
   const oldSlabsInfo: [string, string][] =
     input.taxpayerType === "couple"
@@ -86,6 +100,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
     { label: t('cashInHand'), old: (input.income.salary / months) - oldResult.totalTaxMonthly - (retirementYearly / months), new: (input.income.salary / months) - newResult.totalTaxMonthly - (retirementYearly / months) },
   ];
 
+  // Renders a 2-column (label | old | new) comparison table
   const renderComparisonTable = (
     title: string,
     rows: {
@@ -200,6 +215,91 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
     </Box>
   );
 
+  // Renders a single-column table for when comparison is disabled
+  const renderSingleTable = (
+    title: string,
+    rows: { label: string; value: number; isCredit?: boolean; isPercent?: boolean }[],
+    color: "indigo" | "teal",
+    regimeName: string
+  ) => (
+    <Box
+      style={{
+        background: "var(--gray-1)",
+        border: "1px solid var(--gray-a4)",
+        borderRadius: "var(--radius-4)",
+        overflow: "hidden",
+      }}
+    >
+      <Box px="4" py="3" style={{ background: "var(--gray-3)", borderBottom: "1px solid var(--gray-a4)" }}>
+        <Text size="1" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {title}
+        </Text>
+      </Box>
+      <Table.Root variant="ghost" style={{ border: "none", width: "100%" }}>
+        <Table.Header>
+          <Table.Row style={{ background: "var(--gray-3)" }}>
+            <Table.ColumnHeaderCell style={{ color: "var(--gray-11)", fontWeight: 600, padding: "12px 20px", fontSize: 11, letterSpacing: "0.06em", width: "60%" }}>
+              {t('incomeTax').split(' ')[0]}
+            </Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell style={{ textAlign: "right", padding: "12px 20px", width: "40%" }}>
+              <Box style={{ display: "flex", justifyContent: "flex-end" }}>
+                <Box style={{ background: `var(--${color}-3)`, border: `1px solid var(--${color}-a5)`, borderRadius: "var(--radius-2)", padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Box style={{ width: 6, height: 6, borderRadius: "50%", background: `var(--${color}-9)` }} />
+                  <Text size="1" style={{ color: `var(--${color}-11)`, fontWeight: 700, letterSpacing: "0.05em", fontSize: 11 }}>{regimeName}</Text>
+                </Box>
+              </Box>
+            </Table.ColumnHeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {rows.map((row, i) => {
+            const formatValue = (val: number) => {
+              if (row.isPercent) {
+                const percentValue = val.toFixed(2);
+                if (language === 'ne') {
+                  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+                  const converted = percentValue.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
+                  return `${converted}%`;
+                }
+                return `${percentValue}%`;
+              }
+              return npr(val, language, currency);
+            };
+            return (
+              <Table.Row
+                key={row.label}
+                style={{
+                  borderTop: "1px solid var(--gray-a3)",
+                  background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)",
+                }}
+              >
+                <Table.Cell style={{ padding: "14px 20px", color: "var(--gray-11)", fontWeight: 500, fontSize: 14 }}>
+                  {row.label}
+                </Table.Cell>
+                <Table.Cell className="tnum" style={{ textAlign: "right", padding: "14px 20px" }}>
+                  <Box
+                    style={{
+                      display: "inline-block",
+                      background: `var(--${color}-2)`,
+                      border: `1px solid var(--${color}-a4)`,
+                      borderRadius: "var(--radius-2)",
+                      padding: "3px 10px",
+                      color: `var(--${color}-11)`,
+                      fontWeight: 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    {formatValue(row.value)}
+                  </Box>
+                </Table.Cell>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table.Root>
+    </Box>
+  );
+
   return (
     <Flex direction="column" gap="4" pb="6" className="content-fade">
       <Flex justify="end">
@@ -218,94 +318,139 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
         </Button>
       </Flex>
 
-      {/* Savings hero banner */}
+      {/* Comparison Toggle Card */}
       <Box
-        className="hero-gradient elegant-card"
-        p="5"
-        style={
-          neutral
-            ? undefined
-            : {
-                background: `linear-gradient(135deg, var(--${accent}-3), var(--${accent}-2))`,
-                borderColor: `var(--${accent}-a5)`,
-              }
-        }
+        style={{
+          background: "var(--color-panel-solid)",
+          border: "1px solid var(--gray-a4)",
+          borderRadius: "var(--radius-4)",
+          padding: "14px 18px",
+        }}
       >
-        {neutral ? (
-          <Box style={{ textAlign: "center" }}>
-            <Text size="3" weight="bold" as="div" mb="2" style={{ color: "var(--gray-11)" }}>
-              {t('noSavingsDifference')}
-            </Text>
-            <Text size="2" color="gray" as="div" style={{ lineHeight: 1.5 }}>
-              {t('noSavingsMessage')}
-            </Text>
-          </Box>
-        ) : (
-          <Box style={{ position: "relative" }}>
-            <Flex align="center" gap="1" mb="3">
-              <Box
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 22,
-                  height: 22,
-                  borderRadius: 9999,
-                  background: newIsBetter ? `var(--${accent}-11)` : "var(--red-9)",
-                  color: "white",
-                }}
-              >
-                {newIsBetter ? <ArrowUpIcon width="14" height="14" /> : <ArrowDownIcon width="14" height="14" />}
-              </Box>
-              <Text
-                size="1"
-                weight="bold"
-                style={{
-                  color: newIsBetter ? `var(--${accent}-11)` : "var(--red-11)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {t(newIsBetter ? 'newSlabSaves' : 'oldSlabSaves', { slab: t(newIsBetter ? 'newSlabLabel' : 'oldSlabLabel') })}
-              </Text>
+        <Flex align="center" justify="between" gap="3" wrap="wrap">
+          <Flex align="center" gap="3" style={{ flex: 1, minWidth: 0 }}>
+            <Switch
+              size="2"
+              checked={comparisonEnabled}
+              onCheckedChange={onComparisonToggle}
+              style={{ flexShrink: 0 }}
+            />
+            <Flex direction="column" gap="1">
+              <Text size="2" weight="medium">{t('compareOldVsNew')}</Text>
+              <Text size="1" color="gray">{t('compareToggleHint')}</Text>
             </Flex>
-
-            <Flex gap="6" align="end" wrap="wrap">
-              <Box>
-                <Heading
-                  size="8"
-                  as="h2"
-                  weight="bold"
-                  className="tnum"
-                  style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
-                >
-                  {npr(Math.abs(savingsYearly), language, currency)}
-                </Heading>
-                <Text size="1" color="gray" as="div" mt="1">
-                  {t('perYear')}
-                </Text>
-              </Box>
-              <Box>
-                <Heading
-                  size="6"
-                  as="h3"
-                  weight="bold"
-                  className="tnum"
-                  style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
-                >
-                  {npr(Math.abs(savingsMonthly), language, currency)}
-                </Heading>
-                <Text size="1" color="gray" as="div" mt="1">
-                  {t('perMonth')}
-                </Text>
-              </Box>
-            </Flex>
-          </Box>
-        )}
+          </Flex>
+          {!comparisonEnabled && (
+            <Select.Root value={selectedRegime} onValueChange={(v) => onRegimeChange(v as "old" | "new")}>
+              <Select.Trigger
+                style={{
+                  minWidth: 170,
+                  cursor: "pointer",
+                  height: 40,
+                  borderRadius: "var(--radius-3)",
+                  fontWeight: 600,
+                }}
+              />
+              <Select.Content position="popper">
+                <Select.Item value="old">{t('oldSlabFy')}</Select.Item>
+                <Select.Item value="new">{t('newSlabFy')}</Select.Item>
+              </Select.Content>
+            </Select.Root>
+          )}
+        </Flex>
       </Box>
 
-      {/* Income Summary Cards */}
+      {/* Savings hero banner — only when comparison is enabled */}
+      {comparisonEnabled && (
+        <Box
+          className="hero-gradient elegant-card"
+          p="5"
+          style={
+            neutral
+              ? undefined
+              : {
+                  background: `linear-gradient(135deg, var(--${accent}-3), var(--${accent}-2))`,
+                  borderColor: `var(--${accent}-a5)`,
+                }
+          }
+        >
+          {neutral ? (
+            <Box style={{ textAlign: "center" }}>
+              <Text size="3" weight="bold" as="div" mb="2" style={{ color: "var(--gray-11)" }}>
+                {t('noSavingsDifference')}
+              </Text>
+              <Text size="2" color="gray" as="div" style={{ lineHeight: 1.5 }}>
+                {t('noSavingsMessage')}
+              </Text>
+            </Box>
+          ) : (
+            <Box style={{ position: "relative" }}>
+              <Flex align="center" gap="1" mb="3">
+                <Box
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 22,
+                    height: 22,
+                    borderRadius: 9999,
+                    background: newIsBetter ? `var(--${accent}-11)` : "var(--red-9)",
+                    color: "white",
+                  }}
+                >
+                  {newIsBetter ? <ArrowUpIcon width="14" height="14" /> : <ArrowDownIcon width="14" height="14" />}
+                </Box>
+                <Text
+                  size="1"
+                  weight="bold"
+                  style={{
+                    color: newIsBetter ? `var(--${accent}-11)` : "var(--red-11)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  {t(newIsBetter ? 'newSlabSaves' : 'oldSlabSaves', { slab: t(newIsBetter ? 'newSlabLabel' : 'oldSlabLabel') })}
+                </Text>
+              </Flex>
+
+              <Flex gap="6" align="end" wrap="wrap">
+                <Box>
+                  <Heading
+                    size="8"
+                    as="h2"
+                    weight="bold"
+                    className="tnum"
+                    style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
+                  >
+                    {npr(Math.abs(savingsYearly), language, currency)}
+                  </Heading>
+                  <Text size="1" color="gray" as="div" mt="1">
+                    {t('perYear')}
+                  </Text>
+                </Box>
+                <Box>
+                  <Heading
+                    size="6"
+                    as="h3"
+                    weight="bold"
+                    className="tnum"
+                    style={{ color: `var(--${accent}-11)`, lineHeight: 1 }}
+                  >
+                    {npr(Math.abs(savingsMonthly), language, currency)}
+                  </Heading>
+                  <Text size="1" color="gray" as="div" mt="1">
+                    {t('perMonth')}
+                  </Text>
+                </Box>
+              </Flex>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Income Summary Cards — use displayResult when comparison is off */}
       <Grid columns={{ initial: "1", sm: "2", lg: "3" }} gap="3">
+
         {/* Gross Salary */}
         <Box
           style={{
@@ -352,7 +497,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
-            {npr(oldResult.totalIncome, language, currency)}
+            {npr(displayResult.totalIncome, language, currency)}
           </Text>
         </Box>
 
@@ -403,7 +548,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
-            {npr(oldResult.totalIncome - input.income.salary, language, currency)}
+            {npr(displayResult.totalIncome - input.income.salary, language, currency)}
           </Text>
         </Box>
 
@@ -453,7 +598,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--red-11)", lineHeight: 1 }}>
-            −{npr(oldResult.totalDeductions, language, currency)}
+            −{npr(displayResult.totalDeductions, language, currency)}
           </Text>
         </Box>
 
@@ -503,7 +648,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--gray-12)", lineHeight: 1 }}>
-            {npr(oldResult.netIncomeYearly, language, currency)}
+            {npr(displayResult.netIncomeYearly, language, currency)}
           </Text>
         </Box>
 
@@ -555,7 +700,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
             </Box>
           </Flex>
           <Text size="5" weight="bold" className="tnum" style={{ color: "var(--indigo-12)", lineHeight: 1 }}>
-            {npr(oldResult.taxableIncome, language, currency)}
+            {npr(displayResult.taxableIncome, language, currency)}
           </Text>
         </Box>
       </Grid>
@@ -588,7 +733,7 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {oldResult.deductionBreakdown.map((item, i) => (
+            {displayResult.deductionBreakdown.map((item, i) => (
               <Table.Row key={item.key} style={{ borderTop: "1px solid var(--gray-a3)", background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
                 <Table.Cell style={{ padding: "12px 16px" }}>
                   <Flex align="center" gap="2">
@@ -612,9 +757,43 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
         </Table.Root>
       </Box>
 
-      {/* Comparison Tables */}
-      {renderComparisonTable(`${t('shareTaxComparison')} · ${t('yearly')}`, yearlyTableRows)}
-      {renderComparisonTable(`${t('shareTaxComparison')} · ${t('monthly')}`, monthlyTableRows)}
+      {/* Comparison Tables — dual when enabled, single when disabled */}
+      {comparisonEnabled ? (
+        <>
+          {renderComparisonTable(`${t('shareTaxComparison')} · ${t('yearly')}`, yearlyTableRows)}
+          {renderComparisonTable(`${t('shareTaxComparison')} · ${t('monthly')}`, monthlyTableRows)}
+        </>
+      ) : (
+        <>
+          {renderSingleTable(
+            `${t('shareTaxComparison')} · ${t('yearly')}`,
+            [
+              { label: t('grossTaxBeforeCredits'), value: activeResult.grossTaxYearly },
+              { label: t('taxCredits'), value: activeResult.totalCredits, isCredit: true },
+              { label: t('incomeTax'), value: activeResult.totalTaxYearly },
+              { label: t('effectiveRate'), value: activeResult.effectiveRate * 100, isPercent: true },
+              { label: t('netSalary'), value: activeResult.netIncomeYearly },
+              { label: t('cashInHand'), value: input.income.salary - activeResult.totalTaxYearly - retirementYearly },
+            ],
+            activeColor,
+            selectedRegime === "old" ? t('oldSlab') : t('newSlab')
+          )}
+          {renderSingleTable(
+            `${t('shareTaxComparison')} · ${t('monthly')}`,
+            [
+              { label: t('monthlySalary'), value: input.income.salary / months },
+              { label: t('ssf'), value: input.deductions.ssf / months, isCredit: true },
+              { label: t('providentFund'), value: input.deductions.pf / months, isCredit: true },
+              { label: t('cit'), value: input.deductions.cit / months, isCredit: true },
+              { label: t('incomeTax'), value: activeResult.totalTaxMonthly },
+              { label: t('netSalary'), value: activeResult.netIncomeMonthly },
+              { label: t('cashInHand'), value: (input.income.salary / months) - activeResult.totalTaxMonthly - (retirementYearly / months) },
+            ],
+            activeColor,
+            selectedRegime === "old" ? t('oldSlab') : t('newSlab')
+          )}
+        </>
+      )}
 
       {/* No taxable income message */}
       {!hasTaxableIncome && (
@@ -630,33 +809,56 @@ export default function Calculation({ input, onBack: _onBack }: Props) {
 
       {/* Regime View Cards */}
       {hasTaxableIncome && (
-        <Grid columns={{ initial: "1", lg: "2" }} gap="4">
+        comparisonEnabled ? (
+          <Grid columns={{ initial: "1", lg: "2" }} gap="4">
+            <RegimeView
+              result={oldResult}
+              color="indigo"
+              best={oldIsBetter}
+              info={{
+                title: input.taxpayerType === "couple" ? t('oldSlabCouple') : t('oldSlabIndividual'),
+                desc: t('oldSlabDesc'),
+                slabs: oldSlabsInfo,
+              }}
+            />
+            <RegimeView
+              result={newResult}
+              color="teal"
+              best={newIsBetter}
+              info={{
+                title: t('newSlabAll'),
+                desc: t('newSlabDesc'),
+                slabs: newSlabsInfo,
+              }}
+            />
+          </Grid>
+        ) : (
           <RegimeView
-            result={oldResult}
-            color="indigo"
-            best={oldIsBetter}
-            info={{
+            result={activeResult}
+            color={activeColor}
+            best={true}
+            info={selectedRegime === "old" ? {
               title: input.taxpayerType === "couple" ? t('oldSlabCouple') : t('oldSlabIndividual'),
               desc: t('oldSlabDesc'),
               slabs: oldSlabsInfo,
-            }}
-          />
-          <RegimeView
-            result={newResult}
-            color="teal"
-            best={newIsBetter}
-            info={{
+            } : {
               title: t('newSlabAll'),
               desc: t('newSlabDesc'),
               slabs: newSlabsInfo,
             }}
           />
-        </Grid>
+        )
       )}
 
 
 
-      <ShareTaxDetails input={input} open={shareOpen} onOpenChange={setShareOpen} />
+      <ShareTaxDetails
+        input={input}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        comparisonEnabled={comparisonEnabled}
+        selectedRegime={selectedRegime}
+      />
     </Flex>
   );
 }

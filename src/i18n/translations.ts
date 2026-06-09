@@ -122,6 +122,14 @@ export const translations = {
     generatingImage: 'Generating Image...',
     copyShareText: 'Copy Share Text',
     
+    // Comparison Toggle
+    compareOldVsNew: 'Compare Old vs New Slab',
+    compareToggleHint: 'Turn off to use a single fiscal year',
+    selectFiscalYear: 'Select Fiscal Year',
+    taxRegime: 'Tax Regime',
+    oldSlabFy: 'Old Slab (2082/83)',
+    newSlabFy: 'New Slab (2083/84)',
+
     // Info Dialog
     taxSlabs: 'Tax Slabs',
     oldSlab: 'Old Slab',
@@ -300,6 +308,14 @@ export const translations = {
     generatingImage: 'छवि उत्पन्न गर्दै...',
     copyShareText: 'साझा पाठ प्रतिलिपि गर्नुहोस्',
     
+    // Comparison Toggle
+    compareOldVsNew: 'पुरानो बन नयाँ तहको तुलना',
+    compareToggleHint: 'एउटा आर्थिक वर्ष प्रयोग गर्न बन्द गर्नुहोस्',
+    selectFiscalYear: 'आर्थिक वर्ष छान्नुहोस्',
+    taxRegime: 'कर व्यवस्था',
+    oldSlabFy: 'पुरानो तह (२०८२/८३)',
+    newSlabFy: 'नयाँ तह (२०८३/८४)',
+
     // Info Dialog
     taxSlabs: 'कर तहहरू',
     oldSlab: 'पुरानो तह',

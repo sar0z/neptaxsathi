@@ -14,7 +14,10 @@ interface ShareTaxDetailsProps {
   variableInput?: VariableTaxInput;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  comparisonEnabled?: boolean;
+  selectedRegime?: "old" | "new";
 }
+
 
 type RegimeShareSummary = {
   label: string;
@@ -33,8 +36,25 @@ const formatPercent = (rate: number) => `${(rate * 100).toFixed(2)}%`;
 function plainTextSummary(
   title: string,
   rows: RegimeShareSummary[],
-  currencyFormatter: (amount: number) => string
+  currencyFormatter: (amount: number) => string,
+  comparisonEnabled: boolean = true,
+  selectedRegimeIdx: number = 0
 ) {
+  if (!comparisonEnabled || rows.length === 1) {
+    // Single-regime text output
+    const row = rows[selectedRegimeIdx] ?? rows[0];
+    const lines = [
+      `Regime: ${row.label}`,
+      `Yearly income tax:        ${currencyFormatter(row.result.totalTaxYearly)}`,
+      `Monthly tax (Avg):        ${currencyFormatter(row.monthlyTax)}`,
+      `Monthly salary (Avg):     ${currencyFormatter(row.monthlySalary)}`,
+      `Monthly retirement:       ${currencyFormatter(row.monthlyRetirement)}`,
+      `Monthly cash in hand:     ${currencyFormatter(row.monthlyCashInHand)}`,
+      `Effective rate:           ${formatPercent(row.result.effectiveRate)}`,
+    ];
+    return [title, "", ...lines, "", "Prepared using Nepal Tax Calculator"].join("\n");
+  }
+
   const col1Width = 30;
   const col2Width = 16;
   const col3Width = 16;
@@ -69,14 +89,19 @@ function plainTextSummary(
   ].join("\n");
 }
 
+
 function PrintableLayout({
   input,
   variableInput,
   summaries,
+  comparisonEnabled = true,
+  selectedRegime = "old",
 }: {
   input?: TaxInput;
   variableInput?: VariableTaxInput;
   summaries: RegimeShareSummary[];
+  comparisonEnabled?: boolean;
+  selectedRegime?: "old" | "new";
 }) {
   const { t, language } = useTranslation();
   const currency = t("currency");
@@ -93,58 +118,41 @@ function PrintableLayout({
     return null;
   }, [variableInput]);
 
-  const yearlyComparisonRows = [
-    {
-      label: t("incomeTax"),
-      old: isVariable ? oldVarResult!.totalTax : summaries[0].result.totalTaxYearly,
-      new: isVariable ? newVarResult!.totalTax : summaries[1].result.totalTaxYearly,
-    },
-    {
-      label: t("taxableSalary"),
-      old: isVariable ? oldVarResult!.taxableIncome : summaries[0].result.taxableIncome,
-      new: isVariable ? newVarResult!.taxableIncome : summaries[1].result.taxableIncome,
-    },
-  ];
+  // The active var result for single-regime variable display
+  const activeVarResult = selectedRegime === "old" ? oldVarResult : newVarResult;
+  const displayedSummaries = comparisonEnabled ? summaries : [summaries[selectedRegime === "old" ? 0 : 1]];
+  const activeColor: "indigo" | "teal" = selectedRegime === "old" ? "indigo" : "teal";
 
-  const monthlyComparisonRows = isVariable
+  const yearlyComparisonRows = comparisonEnabled
     ? [
         {
-          label: t("monthlySalary") + " (Avg)",
-          old: oldVarResult!.totalGrossIncome / months,
-          new: newVarResult!.totalGrossIncome / months,
+          label: t("incomeTax"),
+          old: isVariable ? oldVarResult!.totalTax : summaries[0].result.totalTaxYearly,
+          new: isVariable ? newVarResult!.totalTax : summaries[1].result.totalTaxYearly,
         },
         {
-          label: t("ssf") + " (Avg)",
-          old: variableInput!.monthsData.reduce((sum, r) => sum + r.ssf, 0) / months,
-          new: variableInput!.monthsData.reduce((sum, r) => sum + r.ssf, 0) / months,
-        },
-        {
-          label: t("providentFund") + " (Avg)",
-          old: variableInput!.monthsData.reduce((sum, r) => sum + r.pf, 0) / months,
-          new: variableInput!.monthsData.reduce((sum, r) => sum + r.pf, 0) / months,
-        },
-        {
-          label: t("cit") + " (Avg)",
-          old: variableInput!.monthsData.reduce((sum, r) => sum + r.cit, 0) / months,
-          new: variableInput!.monthsData.reduce((sum, r) => sum + r.cit, 0) / months,
-        },
-        {
-          label: t("incomeTax") + " (Avg)",
-          old: oldVarResult!.totalTax / months,
-          new: newVarResult!.totalTax / months,
-        },
-        {
-          label: t("netSalary") + " (Avg)",
-          old: oldVarResult!.monthlyRows.reduce((sum, r) => sum + r.netSalary, 0) / months,
-          new: newVarResult!.monthlyRows.reduce((sum, r) => sum + r.netSalary, 0) / months,
-        },
-        {
-          label: t("cashInHand") + " (Avg)",
-          old: oldVarResult!.netTakeHome / months,
-          new: newVarResult!.netTakeHome / months,
+          label: t("taxableSalary"),
+          old: isVariable ? oldVarResult!.taxableIncome : summaries[0].result.taxableIncome,
+          new: isVariable ? newVarResult!.taxableIncome : summaries[1].result.taxableIncome,
         },
       ]
-    : [
+    : [];
+
+  const yearlySingleRows = !comparisonEnabled
+    ? [
+        {
+          label: t("incomeTax"),
+          value: isVariable ? activeVarResult!.totalTax : displayedSummaries[0].result.totalTaxYearly,
+        },
+        {
+          label: t("taxableSalary"),
+          value: isVariable ? activeVarResult!.taxableIncome : displayedSummaries[0].result.taxableIncome,
+        },
+      ]
+    : [];
+
+  const monthlyComparisonRows = !isVariable
+    ? [
         {
           label: t("monthlySalary"),
           old: input!.income.salary / months,
@@ -180,7 +188,8 @@ function PrintableLayout({
           old: summaries[0].monthlyCashInHand,
           new: summaries[1].monthlyCashInHand,
         },
-      ];
+      ]
+    : [];
 
   const taxpayerType = isVariable ? variableInput!.taxpayerType : input!.taxpayerType;
 
@@ -189,7 +198,10 @@ function PrintableLayout({
       <Flex justify="between" align="start" gap="4" className="share-header">
         <Box>
           <Text size="1" weight="bold" color="gray" className="share-eyebrow">
-            {t("fy")} {t("oldFiscalYear")} / {t("newFiscalYear")}
+            {comparisonEnabled
+              ? `${t("fy")} ${t("oldFiscalYear")} / ${t("newFiscalYear")}`
+              : `${t("fy")} ${selectedRegime === "old" ? t("oldFiscalYear") : t("newFiscalYear")}`
+            }
           </Text>
           <Heading size="6" as="h2" mt="1">
             {t("sharePreviewTitle")}
@@ -208,102 +220,218 @@ function PrintableLayout({
         </Box>
       </Flex>
 
-      <Grid columns={{ initial: "1", sm: "2" }} gap="3" mt="4">
-        {summaries.map((summary) => (
-          <Box key={summary.result.regimeId} className={`share-regime share-regime-${summary.color}`}>
-            <Text size="1" weight="bold" className="share-eyebrow">
-              {summary.label}
-            </Text>
-            <Flex align="baseline" gap="1" mt="1" wrap="nowrap">
-              <Text size="2" weight="bold" color="gray" style={{ flexShrink: 0, opacity: 0.7 }}>
-                {currency}
+      {/* Regime cards — single or dual */}
+      {comparisonEnabled ? (
+        <Grid columns={{ initial: "1", sm: "2" }} gap="3" mt="4">
+          {summaries.map((summary) => (
+            <Box key={summary.result.regimeId} className={`share-regime share-regime-${summary.color}`}>
+              <Text size="1" weight="bold" className="share-eyebrow">
+                {summary.label}
               </Text>
-              <Text size="6" weight="bold" className="tnum" as="div" style={{ lineHeight: 1, wordBreak: "break-all" }}>
-                {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyCashInHand))}
+              <Flex align="baseline" gap="1" mt="1" wrap="nowrap">
+                <Text size="2" weight="bold" color="gray" style={{ flexShrink: 0, opacity: 0.7 }}>
+                  {currency}
+                </Text>
+                <Text size="6" weight="bold" className="tnum" as="div" style={{ lineHeight: 1, wordBreak: "break-all" }}>
+                  {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyCashInHand))}
+                </Text>
+              </Flex>
+              <Text size="1" color="gray" as="div" style={{ marginTop: 6 }}>
+                {t("cashInHand")} ({t("monthly")} Avg)
               </Text>
-            </Flex>
-            <Text size="1" color="gray" as="div" style={{ marginTop: 6 }}>
-              {t("cashInHand")} ({t("monthly")} Avg)
-            </Text>
-            <Separator size="4" my="3" />
-            <Flex justify="between" gap="3">
+              <Separator size="4" my="3" />
+              <Flex justify="between" gap="3">
+                <Box>
+                  <Text size="1" color="gray" as="div">
+                    {t("monthlyTax")} (Avg)
+                  </Text>
+                  <Text size="2" weight="bold" className="tnum" style={{ wordBreak: "break-all" }}>
+                    <Text size="1" color="gray" style={{ opacity: 0.7 }}>{currency} </Text>
+                    {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyTax))}
+                  </Text>
+                </Box>
+                <Box style={{ textAlign: "right" }}>
+                  <Text size="1" color="gray" as="div">
+                    {t("effectiveRate")}
+                  </Text>
+                  <Text size="2" weight="bold" className="tnum">
+                    {formatPercent(summary.result.effectiveRate)}
+                  </Text>
+                </Box>
+              </Flex>
+            </Box>
+          ))}
+        </Grid>
+      ) : (
+        <Box mt="4" className={`share-regime share-regime-${activeColor}`}>
+          {displayedSummaries.map((summary) => (
+            <Flex key={summary.result.regimeId} align="start" justify="between" gap="4" wrap="wrap">
               <Box>
-                <Text size="1" color="gray" as="div">
-                  {t("monthlyTax")} (Avg)
-                </Text>
-                <Text size="2" weight="bold" className="tnum" style={{ wordBreak: "break-all" }}>
-                  <Text size="1" color="gray" style={{ opacity: 0.7 }}>{currency} </Text>
-                  {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyTax))}
-                </Text>
+                <Text size="1" weight="bold" className="share-eyebrow">{summary.label}</Text>
+                <Flex align="baseline" gap="1" mt="1" wrap="nowrap">
+                  <Text size="2" weight="bold" color="gray" style={{ flexShrink: 0, opacity: 0.7 }}>{currency}</Text>
+                  <Text size="6" weight="bold" className="tnum" as="div" style={{ lineHeight: 1, wordBreak: "break-all" }}>
+                    {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyCashInHand))}
+                  </Text>
+                </Flex>
+                <Text size="1" color="gray" as="div" style={{ marginTop: 6 }}>{t("cashInHand")} ({t("monthly")} Avg)</Text>
               </Box>
-              <Box style={{ textAlign: "right" }}>
-                <Text size="1" color="gray" as="div">
-                  {t("effectiveRate")}
-                </Text>
-                <Text size="2" weight="bold" className="tnum">
-                  {formatPercent(summary.result.effectiveRate)}
-                </Text>
-              </Box>
+              <Flex gap="5">
+                <Box>
+                  <Text size="1" color="gray" as="div">{t("monthlyTax")} (Avg)</Text>
+                  <Text size="2" weight="bold" className="tnum">
+                    <Text size="1" color="gray" style={{ opacity: 0.7 }}>{currency} </Text>
+                    {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(summary.monthlyTax))}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text size="1" color="gray" as="div">{t("effectiveRate")}</Text>
+                  <Text size="2" weight="bold" className="tnum">{formatPercent(summary.result.effectiveRate)}</Text>
+                </Box>
+              </Flex>
             </Flex>
-          </Box>
-        ))}
-      </Grid>
+          ))}
+        </Box>
+      )}
 
       <Box className="share-section" mt="4">
         <Text size="2" weight="bold" as="div" mb="3">
           {t("shareTaxComparison")} · {t("yearly")}
         </Text>
-        <Table.Root variant="ghost" className="share-table">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("oldSlab")}</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("newSlab")}</Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {yearlyComparisonRows.map((row) => (
-              <Table.Row key={row.label}>
-                <Table.Cell>{row.label}</Table.Cell>
-                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
-                  {npr(row.old, language, currency)}
-                </Table.Cell>
-                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
-                  {npr(row.new, language, currency)}
-                </Table.Cell>
+        {comparisonEnabled ? (
+          <Table.Root variant="ghost" className="share-table">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("oldSlab")}</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("newSlab")}</Table.ColumnHeaderCell>
               </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Root>
+            </Table.Header>
+            <Table.Body>
+              {yearlyComparisonRows.map((row) => (
+                <Table.Row key={row.label}>
+                  <Table.Cell>{row.label}</Table.Cell>
+                  <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                    {npr(row.old, language, currency)}
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                    {npr(row.new, language, currency)}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        ) : (
+          <Table.Root variant="ghost" className="share-table">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ textAlign: "right" }}>
+                  {selectedRegime === "old" ? t("oldSlab") : t("newSlab")}
+                </Table.ColumnHeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {yearlySingleRows.map((row) => (
+                <Table.Row key={row.label}>
+                  <Table.Cell>{row.label}</Table.Cell>
+                  <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                    {npr(row.value, language, currency)}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        )}
       </Box>
 
-      <Box className="share-section" mt="3">
-        <Text size="2" weight="bold" as="div" mb="3">
-          {t("shareTaxComparison")} · {t("monthly")}
-        </Text>
-        <Table.Root variant="ghost" className="share-table">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("oldSlab")}</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("newSlab")}</Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {monthlyComparisonRows.map((row) => (
-              <Table.Row key={row.label}>
-                <Table.Cell>{row.label}</Table.Cell>
-                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
-                  {npr(row.old, language, currency)}
-                </Table.Cell>
-                <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
-                  {npr(row.new, language, currency)}
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Root>
-      </Box>
+      {isVariable ? (
+        <>
+          {/* Variable mode: single regime table */}
+          <Box className="share-section" mt="3">
+            <Text size="2" weight="bold" as="div" mb="3">
+              {selectedRegime === "old" ? t("oldSlab") : t("newSlab")} · {t("monthly")}
+            </Text>
+            <Table.Root variant="ghost" className="share-table">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell>{t("month")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("basicSalary")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("ssf")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("providentFund")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("cit")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("incomeTax")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("netSalary")}</Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {activeVarResult!.monthlyRows.map((row, idx) => (
+                  <Table.Row key={idx}>
+                    <Table.Cell>{row.monthName || `${idx + 1}`}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right" }}>{npr(row.basicSalary, language, currency)}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right" }}>{npr(row.ssf, language, currency)}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right" }}>{npr(row.pf, language, currency)}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right" }}>{npr(row.cit, language, currency)}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>{npr(row.tds, language, currency)}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>{npr(row.netSalary, language, currency)}</Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
+          </Box>
+        </>
+      ) : (
+        <Box className="share-section" mt="3">
+          <Text size="2" weight="bold" as="div" mb="3">
+            {t("shareTaxComparison")} · {t("monthly")}
+          </Text>
+          {comparisonEnabled ? (
+            <Table.Root variant="ghost" className="share-table">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("oldSlab")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>{t("newSlab")}</Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {monthlyComparisonRows.map((row) => (
+                  <Table.Row key={row.label}>
+                    <Table.Cell>{row.label}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                      {npr(row.old, language, currency)}
+                    </Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                      {npr(row.new, language, currency)}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
+          ) : (
+            <Table.Root variant="ghost" className="share-table">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell>{t("incomeTax")}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ textAlign: "right" }}>
+                    {selectedRegime === "old" ? t("oldSlab") : t("newSlab")}
+                  </Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {monthlyComparisonRows.map((row) => (
+                  <Table.Row key={row.label}>
+                    <Table.Cell>{row.label}</Table.Cell>
+                    <Table.Cell className="tnum" style={{ textAlign: "right", fontWeight: 600 }}>
+                      {npr(selectedRegime === "old" ? row.old : row.new, language, currency)}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
+          )}
+        </Box>
+      )}
 
       <Text size="1" color="gray" as="div" mt="4" style={{ lineHeight: 1.5 }}>
         {t("informationalOnly")}
@@ -312,7 +440,8 @@ function PrintableLayout({
   );
 }
 
-export default function ShareTaxDetails({ input, variableInput, open, onOpenChange }: ShareTaxDetailsProps) {
+export default function ShareTaxDetails({ input, variableInput, open, onOpenChange, comparisonEnabled = true, selectedRegime = "old" }: ShareTaxDetailsProps) {
+
   const { t, language } = useTranslation();
   const currency = t("currency");
   const printRef = useRef<HTMLDivElement>(null);
@@ -390,8 +519,12 @@ export default function ShareTaxDetails({ input, variableInput, open, onOpenChan
   ];
 
   const handleShare = async () => {
-    const text = plainTextSummary(t("sharePreviewTitle"), summaries, (amount) =>
-      npr(amount, language, currency)
+    const text = plainTextSummary(
+      t("sharePreviewTitle"),
+      summaries,
+      (amount) => npr(amount, language, currency),
+      comparisonEnabled,
+      selectedRegime === "old" ? 0 : 1
     );
 
     try {
@@ -560,7 +693,13 @@ export default function ShareTaxDetails({ input, variableInput, open, onOpenChan
 
         <Box p="4" style={{ maxHeight: "70dvh", overflowY: "auto", background: "var(--gray-2)" }}>
           <Box ref={printRef}>
-            <PrintableLayout input={input} variableInput={variableInput} summaries={summaries} />
+            <PrintableLayout
+              input={input}
+              variableInput={variableInput}
+              summaries={summaries}
+              comparisonEnabled={comparisonEnabled}
+              selectedRegime={selectedRegime}
+            />
           </Box>
         </Box>
 
