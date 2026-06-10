@@ -67,6 +67,55 @@ import Information from "./components/Information";
 import DeveloperInfo from "./components/DeveloperInfo";
 import { EditIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon, TableIcon } from "./components/icons";
 
+const MONTH_NAMES_APP = [
+  "Shrawan", "Bhadra", "Ashwin", "Kartik", "Mangsir", "Poush",
+  "Magh", "Falgun", "Chaitra", "Baishakh", "Jestha", "Ashadh"
+];
+
+export interface MonthlyRowData {
+  id: string;
+  monthName: string;
+  basicSalary: number;
+  ssf: number;
+  pf: number;
+  cit: number;
+}
+
+export interface VarInputState {
+  fiscalYear: string;
+  taxpayerType: "individual" | "couple";
+  contributingSSF: boolean;
+  isFemaleOnlyRemuneration: boolean;
+  annualAllowance: number;
+  annualBonus: number;
+  otherIncome: number;
+  insurance: number;
+  medicalInsurance: number;
+  donations: number;
+  monthsData: MonthlyRowData[];
+}
+
+const createDefaultVarInput = (): VarInputState => ({
+  fiscalYear: "2082/83",
+  taxpayerType: "individual",
+  contributingSSF: false,
+  isFemaleOnlyRemuneration: false,
+  annualAllowance: 0,
+  annualBonus: 0,
+  otherIncome: 0,
+  insurance: 0,
+  medicalInsurance: 0,
+  donations: 0,
+  monthsData: MONTH_NAMES_APP.map((m) => ({
+    id: crypto.randomUUID(),
+    monthName: m,
+    basicSalary: 0,
+    ssf: 0,
+    pf: 0,
+    cit: 0,
+  })),
+});
+
 declare global {
   interface Window {
     umami?: { track: (event: string, data?: Record<string, unknown>) => void };
@@ -113,6 +162,7 @@ export default function App() {
   ];
 
   const [input, setInput] = useState<TaxInput>(DEFAULT_INPUT);
+  const [varInput, setVarInput] = useState<VarInputState>(createDefaultVarInput);
   const [tab, setTab] = useState<TabKey>("entry");
   const [infoOpen, setInfoOpen] = useState(false);
   const [appInfoOpen, setAppInfoOpen] = useState(false);
@@ -122,7 +172,7 @@ export default function App() {
   const [comparisonEnabled, setComparisonEnabled] = useState<boolean>(() =>
     localStorage.getItem("comparison-enabled") !== "false"
   );
-  // Selected regime for single-slab mode (default "old" = current FY 2082/83)
+  // Selected tax schedule for single-slab mode (default "old" = current FY 2082/83)
   const [selectedRegime, setSelectedRegime] = useState<"old" | "new">(() => {
     const stored = localStorage.getItem("selected-regime");
     return stored === "new" ? "new" : "old";
@@ -137,7 +187,7 @@ export default function App() {
   const handleRegimeChange = (r: "old" | "new") => {
     setSelectedRegime(r);
     localStorage.setItem("selected-regime", r);
-    window.umami?.track("regime-changed", { regime: r });
+    window.umami?.track("tax-schedule-changed", { schedule: r });
   };
 
 
@@ -336,6 +386,8 @@ export default function App() {
                   onBack={() => setTab("entry")}
                   selectedRegime={selectedRegime}
                   onRegimeChange={handleRegimeChange}
+                  varInput={varInput}
+                  setVarInput={setVarInput}
                 />
 
               </Container>
@@ -395,6 +447,8 @@ export default function App() {
                   onBack={() => setTab("entry")}
                   selectedRegime={selectedRegime}
                   onRegimeChange={handleRegimeChange}
+                  varInput={varInput}
+                  setVarInput={setVarInput}
                 />
               </Box>
               <Box style={{ display: tab === "calc" ? "block" : "none" }} p="4">
@@ -491,7 +545,7 @@ export default function App() {
                 <Flex align="center" justify="between">
                   <Flex align="center" gap="2">
                     <Box style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--indigo-9)" }} />
-                    <Text size="3" weight="bold">{t('taxSlabs')} · {t('fy')} {t('oldFiscalYear')}</Text>
+                    <Text size="3" weight="bold">{t('taxSlabs')} · {t('fy')} - {t('oldFiscalYear')}</Text>
                   </Flex>
                   <Dialog.Close>
                     <Button variant="ghost" color="gray" size="2" style={{ borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}>

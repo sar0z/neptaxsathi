@@ -4,7 +4,7 @@ export const translations = {
   en: {
     // App Header
     appTitle: 'Nepal Tax Calculator',
-    appSubtitle: 'FY {fiscalYear} · Old vs New Slab',
+    appSubtitle: 'FY - {fiscalYear} · Tax Slab Comparison',
     
     // Fiscal Years
     oldFiscalYear: '2082/83',
@@ -12,8 +12,8 @@ export const translations = {
     fy: 'FY',
     
     // Regime Names
-    oldRegimeName: 'Old Slab (2082/83)',
-    newRegimeName: 'New Slab',
+    oldRegimeName: 'Tax Schedule FY - 2082/83',
+    newRegimeName: 'Tax Schedule FY - 2083/84',
     
     // Navigation
     navEntry: 'Entry',
@@ -104,7 +104,7 @@ export const translations = {
     newSlabSaves: '{slab} saves you',
     oldSlabSaves: '{slab} saves you',
     noSavingsDifference: 'No Savings Difference',
-    noSavingsMessage: 'Both regimes result in the same tax amount. But hey, at least you\'re consistent! 🎯',
+    noSavingsMessage: 'Both tax schedules result in the same tax liability. No difference in assessed tax under either schedule.',
     perMonth: 'per month',
     newSlabLabel: 'New slab',
     oldSlabLabel: 'Old slab',
@@ -123,12 +123,12 @@ export const translations = {
     copyShareText: 'Copy Share Text',
     
     // Comparison Toggle
-    compareOldVsNew: 'Compare Old vs New Slab',
-    compareToggleHint: 'Turn off to use a single fiscal year',
-    selectFiscalYear: 'Select Fiscal Year',
-    taxRegime: 'Tax Regime',
-    oldSlabFy: 'Old Slab (2082/83)',
-    newSlabFy: 'New Slab (2083/84)',
+    compareOldVsNew: 'Compare Tax Schedules (FY - 2082/83 vs FY - 2083/84)',
+    compareToggleHint: 'Turn off to view a single assessment year',
+    selectFiscalYear: 'Select Assessment Year',
+    taxRegime: 'Tax Assessment Year',
+    oldSlabFy: 'Tax Schedule — FY - 2082/83',
+    newSlabFy: 'Tax Schedule — FY - 2083/84',
 
     // Info Dialog
     taxSlabs: 'Tax Slabs',
@@ -155,16 +155,16 @@ export const translations = {
     // App Info Dialog
     appInfoTitle: 'Nepal Tax Calculator',
     whatIsThisApp: 'What is this app?',
-    appDescription: 'Nepal Tax Calculator helps salaried employees instantly compare their tax liability under the <strong>Old Slab (FY {oldFiscalYear})</strong> vs the newly proposed <strong>New Slab (FY {newFiscalYear})</strong> — so you can clearly see which regime benefits you more.',
+    appDescription: 'Nepal Tax Calculator helps salaried employees instantly compare their tax liability under the <strong>Tax Schedule (FY - {oldFiscalYear})</strong> vs the newly introduced <strong>Tax Schedule (FY - {newFiscalYear})</strong> — so you can clearly assess which assessment year results in a lower tax burden.',
     sideBySideComparison: 'Side-by-Side Comparison',
-    oldVsNewTax: 'Old vs New Tax: See your income tax, effective rate, net income, and cash in hand for both regimes in one table.',
+    oldVsNewTax: 'FY - 2082/83 vs FY - 2083/84: Compare income tax liability, effective tax rate, net income, and net cash in hand for both assessment years in a single table.',
     ssfBenefit: 'SSF Benefit: Contributing to SSF waives the 1% first-slab social security tax entirely.',
-    deductionCaps: 'Deduction Caps: retirement fund is capped at the lower of actual contribution, one-third of income, or ₨ 5,00,000 · life insurance up to ₨ 40,000 · medical insurance up to ₨ 20,000.',
+    deductionCaps: 'Deduction Caps: retirement fund is capped at the lower of actual contribution, one-third of income, or Rs. 5,00,000 · life insurance up to Rs. 40,000 · medical insurance up to Rs. 20,000.',
     individualCouple: 'Individual & Couple: Slab thresholds automatically adjust based on taxpayer type.',
     privacyDisclaimer: 'Privacy & Disclaimer',
     noDataStored: 'No data is stored or transmitted. All calculations run entirely in your browser. We do not collect, store, or share any of your financial information.',
     informationalOnly: 'This tool is for informational purposes only and does not constitute professional tax or financial advice. Tax laws are subject to change — consult a certified tax professional for filing.',
-    figuresBasedOn: 'Figures are based on the proposed FY {newFiscalYear} (new slab) and FY {oldFiscalYear} (old slab) and may not reflect final legislation.',
+    figuresBasedOn: 'Figures are based on the tax schedules for FY - {newFiscalYear} and FY - {oldFiscalYear}. These may not reflect final enacted legislation.',
     gotIt: 'Got it, let me calculate',
     neverShowAgain: 'Don\'t show this again',
     
@@ -175,7 +175,7 @@ export const translations = {
     applyValue: 'Apply Value [A]',
     
     // Currency
-    currency: '₨',
+    currency: 'Rs.',
     
     // RegimeView
     better: 'Better',
@@ -190,7 +190,7 @@ export const translations = {
   ne: {
     // App Header
     appTitle: 'नेपाल कर गणक',
-    appSubtitle: 'आर्थिक वर्ष {fiscalYear} · पुरानो बन नयाँ',
+    appSubtitle: 'आव - {fiscalYear} · कर तह तुलना',
     
     // Fiscal Years
     oldFiscalYear: '२०८२/८३',
@@ -198,8 +198,8 @@ export const translations = {
     fy: 'आर्थिक वर्ष',
     
     // Regime Names
-    oldRegimeName: 'पुरानो तह (२०८२/८३)',
-    newRegimeName: 'नयाँ तह',
+    oldRegimeName: 'कर तालिका आव - २०८२/८३',
+    newRegimeName: 'कर तालिका आव - २०८३/८४',
     
     // Navigation
     navEntry: 'प्रविष्टि',
@@ -290,7 +290,7 @@ export const translations = {
     newSlabSaves: '{slab} ले तपाईं बचाउँछ',
     oldSlabSaves: '{slab} ले तपाईं बचाउँछ',
     noSavingsDifference: 'बचतमा कुनै फरक छैन',
-    noSavingsMessage: 'दुवै व्यवस्थाले समान कर रकम दिन्छ। तर के भन्ने, कम्तिमा तपाईं एकै छिन्नुहुन्छ! 🎯',
+    noSavingsMessage: 'दुवै कर तालिका अन्तर्गत कर दायित्व समान छ। कुनै पनि तालिकामा मूल्यांकन गरिएको करमा कुनै भिन्नता छैन।',
     perMonth: 'प्रति महिना',
     newSlabLabel: 'नयाँ तह',
     oldSlabLabel: 'पुरानो तह',
@@ -309,12 +309,12 @@ export const translations = {
     copyShareText: 'साझा पाठ प्रतिलिपि गर्नुहोस्',
     
     // Comparison Toggle
-    compareOldVsNew: 'पुरानो बन नयाँ तहको तुलना',
-    compareToggleHint: 'एउटा आर्थिक वर्ष प्रयोग गर्न बन्द गर्नुहोस्',
-    selectFiscalYear: 'आर्थिक वर्ष छान्नुहोस्',
-    taxRegime: 'कर व्यवस्था',
-    oldSlabFy: 'पुरानो तह (२०८२/८३)',
-    newSlabFy: 'नयाँ तह (२०८३/८४)',
+    compareOldVsNew: 'कर तालिकाहरूको तुलना (आव - २०८२/८३ र आव - २०८३/८४)',
+    compareToggleHint: 'एउटा निर्धारण वर्ष हेर्न बन्द गर्नुहोस्',
+    selectFiscalYear: 'निर्धारण वर्ष छान्नुहोस्',
+    taxRegime: 'कर निर्धारण वर्ष',
+    oldSlabFy: 'कर तालिका — आव - २०८२/८३',
+    newSlabFy: 'कर तालिका — आव - २०८३/८४',
 
     // Info Dialog
     taxSlabs: 'कर तहहरू',
@@ -341,16 +341,16 @@ export const translations = {
     // App Info Dialog
     appInfoTitle: 'नेपाल कर गणक',
     whatIsThisApp: 'यो एप के हो?',
-    appDescription: 'नेपाल कर गणकले तलबधारी कर्मचारीहरूलाई <strong>पुरानो तह (आर्थिक वर्ष {oldFiscalYear})</strong> र नयाँ प्रस्तावित <strong>नयाँ तह (आर्थिक वर्ष {newFiscalYear})</strong> अन्तर्गत उनीहरूको कर दायित्वको तुरन्त तुलना गर्न मद्दत गर्दछ — ताकि तपाईं कुन व्यवस्था तपाईंलाई बढी फाइदा हुन्छ स्पष्ट रूपमा देख्न सक्नुहुन्छ।',
+    appDescription: 'नेपाल कर गणकले तलबधारी कर्मचारीहरूलाई <strong>कर तालिका (आव - {oldFiscalYear})</strong> र नयाँ <strong>कर तालिका (आव - {newFiscalYear})</strong> अन्तर्गत उनीहरूको कर दायित्वको तुरन्त तुलना गर्न मद्दत गर्दछ — ताकि कुन निर्धारण वर्षमा कर भार कम हुन्छ भनी स्पष्ट रूपमा मूल्यांकन गर्न सकिन्छ।',
     sideBySideComparison: 'पक्ष-दर-पक्ष तुलना',
-    oldVsNewTax: 'पुरानो बन नयाँ कर: दुवै व्यवस्थाको लागि आम्दानी कर, प्रभावकारी दर, शुद्ध आम्दानी, र हातमा नगद एउटै तालिकामा हेर्नुहोस्।',
+    oldVsNewTax: 'आव - २०८२/८३ र आव - २०८३/८४: दुवै निर्धारण वर्षको आम्दानी कर दायित्व, प्रभावकारी कर दर, शुद्ध आम्दानी र हातमा नगद एउटै तालिकामा तुलना गर्नुहोस्।',
     ssfBenefit: 'सामाजिक सुरक्षा कोष फाइदा: सामाजिक सुरक्षा कोषमा योगदान गर्नाले पहिलो तहको १% सामाजिक सुरक्षा कर पूर्ण रूपमा छुट हुन्छ।',
     deductionCaps: 'कटौती सीमा: अवकाश कोष वास्तविक योगदान, आम्दानीको एक-तिहाइ, वा रु ५,००,००० मध्ये कम · जीवन बीमा रु ४०,००० सम्म · स्वास्थ्य बीमा रु २०,००० सम्म।',
     individualCouple: 'व्यक्तिगत र दम्पती: करदाता प्रकारको आधारमा तह सीमा स्वत: रूपमा समायोजन हुन्छ।',
     privacyDisclaimer: 'गोपनीयता र अस्वीकरण',
     noDataStored: 'कुनै पनि डाटा भण्डारण वा प्रसारण गरिँदैन। सबै गणना पूर्ण रूपमा तपाईंको ब्राउजरमा चल्छ। हामी तपाईंको कुनै पनि वित्तीय जानकारी संकलन, भण्डारण, वा साझा गर्दैनौं।',
     informationalOnly: 'यो उपकरण केवल सूचनात्मक उद्देश्यका लागि हो र यसले व्यावसायिक कर वा वित्तीय सल्लाह प्रदान गर्दैन। कर कानून परिवर्तन हुन सक्छ — दाखिल गर्नका लागि प्रमाणित कर विशेषज्ञसँग सल्लाह लिनुहोस्।',
-    figuresBasedOn: 'आँकडाहरू प्रस्तावित आर्थिक वर्ष {newFiscalYear} (नयाँ तह) र आर्थिक वर्ष {oldFiscalYear} (पुरानो तह) मा आधारित छन् र अन्तिम विधानलाई प्रतिबिम्बित नगर्न सक्छन्।',
+    figuresBasedOn: 'आँकडाहरू आव - {newFiscalYear} र आव - {oldFiscalYear} को कर तालिकामा आधारित छन्। यी अन्तिम लागू कानूनलाई प्रतिबिम्बित नगर्न सक्छन्।',
     gotIt: 'ठीक छ, मलाई गणना गर्न दिनुहोस्',
     neverShowAgain: 'यो फेरि नदेखाउनुहोस्',
     

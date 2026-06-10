@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Flex, Text, Heading, Box, Button, Table, Grid, Switch, TextField, Card, Badge, Dialog, Popover, Select } from "@radix-ui/themes";
 
@@ -11,11 +11,14 @@ import { calculateVariableTDS, npr } from "../engine/taxEngine";
 import { oldRegime, newRegime } from "../engine/scenarios";
 import RegimeView from "./RegimeView";
 import ShareTaxDetails from "./ShareTaxDetails";
+import type { VarInputState } from "../App";
 
 interface Props {
   onBack?: () => void;
   selectedRegime: "old" | "new";
   onRegimeChange: (r: "old" | "new") => void;
+  varInput: VarInputState;
+  setVarInput: React.Dispatch<React.SetStateAction<VarInputState>>;
 }
 
 
@@ -79,7 +82,7 @@ const CalcIcon = () => (
   </svg>
 );
 
-export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegimeChange }: Props) {
+export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegimeChange, varInput, setVarInput }: Props) {
 
   const { t, language } = useTranslation();
   const currency = t('currency');
@@ -147,27 +150,6 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
       ),
     }));
   };
-
-  const [varInput, setVarInput] = useState(() => ({
-    fiscalYear: "2082/83",
-    taxpayerType: "individual" as "individual" | "couple",
-    contributingSSF: false,
-    isFemaleOnlyRemuneration: false,
-    annualAllowance: 0,
-    annualBonus: 0,
-    otherIncome: 0,
-    insurance: 0,
-    medicalInsurance: 0,
-    donations: 0,
-    monthsData: MONTH_NAMES.map((m) => ({
-      id: crypto.randomUUID(),
-      monthName: m,
-      basicSalary: 0,
-      ssf: 0,
-      pf: 0,
-      cit: 0,
-    })),
-  }));
 
   // Quick fill inputs
   const [fillBasic, setFillBasic] = useState("");
@@ -280,7 +262,7 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
             {t("shareTaxDetails")}
           </Button>
           <Badge color="indigo" size="2">
-            Variable Income Mode
+            {t('variableIncomeMode')}
           </Badge>
         </Flex>
       </Flex>
@@ -367,10 +349,10 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
           {/* Annual Deductions */}
           <Card size="3">
             <Flex direction="column" gap="3">
-              <SectionLabel>Annual Income & Deductions</SectionLabel>
+              <SectionLabel>{t('annualIncomeDeductions')}</SectionLabel>
               <Flex direction="column" gap="3">
                 <label>
-                  <Text size="1" color="gray" mb="1" as="div">Annual Allowances</Text>
+                  <Text size="1" color="gray" mb="1" as="div">{t('annualAllowances')}</Text>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
@@ -405,7 +387,7 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
                   </TextField.Root>
                 </label>
                 <label>
-                  <Text size="1" color="gray" mb="1" as="div">Annual Bonus / OT</Text>
+                  <Text size="1" color="gray" mb="1" as="div">{t('annualBonusOt')}</Text>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
@@ -440,7 +422,7 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
                   </TextField.Root>
                 </label>
                 <label>
-                  <Text size="1" color="gray" mb="1" as="div">Life Insurance Premium</Text>
+                  <Text size="1" color="gray" mb="1" as="div">{t('lifeInsurancePremium')}</Text>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
@@ -475,7 +457,7 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
                   </TextField.Root>
                 </label>
                 <label>
-                  <Text size="1" color="gray" mb="1" as="div">Medical Insurance Premium</Text>
+                  <Text size="1" color="gray" mb="1" as="div">{t('medicalInsurancePremium')}</Text>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
@@ -510,7 +492,7 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
                   </TextField.Root>
                 </label>
                 <label>
-                  <Text size="1" color="gray" mb="1" as="div">Donations</Text>
+                  <Text size="1" color="gray" mb="1" as="div">{t('donations')}</Text>
                   <TextField.Root
                     type="text"
                     inputMode="decimal"
@@ -1028,7 +1010,7 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
                       </TextField.Root>
                     </label>
                     <label>
-                      <Text size="1" color="gray" mb="1" as="div">Donations</Text>
+                      <Text size="1" color="gray" mb="1" as="div">{t('donations')}</Text>
                       <TextField.Root
                         type="text"
                         inputMode="decimal"
@@ -1523,36 +1505,143 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
 
 
       {/* Summary Cards — single active regime */}
-      <Grid columns={{ initial: "1", md: "2" }} gap="4">
-        <Card size="3" style={{ borderColor: `var(--${activeColor}-8)` }}>
-          <Flex direction="column" gap="3">
-            <Flex align="center" justify="between">
-              <Heading size="4" color={activeColor}>
-                {selectedRegime === "old" ? t('oldRegimeName') : t('newRegimeName')}
-              </Heading>
-              <Badge color={activeColor}>{selectedRegime === "old" ? t('oldSlabFy') : t('newSlabFy')}</Badge>
-            </Flex>
-            <Grid columns="2" gap="3">
-              <Box>
-                <Text size="1" color="gray">Total Gross Income</Text>
-                <Text size="3" weight="bold">{npr(activeVarResult.totalGrossIncome, language, currency)}</Text>
-              </Box>
-              <Box>
-                <Text size="1" color="gray">Total Deductions</Text>
-                <Text size="3" weight="bold">{npr(activeVarResult.totalDeductions, language, currency)}</Text>
-              </Box>
-              <Box>
-                <Text size="1" color="gray">Taxable Income</Text>
-                <Text size="3" weight="bold">{npr(activeVarResult.taxableIncome, language, currency)}</Text>
-              </Box>
-              <Box>
-                <Text size="1" color="gray">Total Annual TDS</Text>
-                <Text size="3" weight="bold" color={activeColor}>{npr(activeVarResult.totalTax, language, currency)}</Text>
-              </Box>
-            </Grid>
+      <Box
+        style={{
+          background: `linear-gradient(135deg, var(--${activeColor}-2), var(--${activeColor}-1))`,
+          border: `1px solid var(--${activeColor}-a5)`,
+          borderRadius: "var(--radius-4)",
+          padding: "20px 24px",
+          boxShadow: `0 2px 12px var(--${activeColor}-a3)`,
+        }}
+      >
+        <Flex direction="column" gap="4">
+          {/* Header row */}
+          <Flex align="center" gap="2">
+            <Box
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: `var(--${activeColor}-9)`,
+                flexShrink: 0,
+              }}
+            />
+            <Heading size="4" color={activeColor} style={{ flex: 1 }}>
+              {selectedRegime === "old" ? t('oldRegimeName') : t('newRegimeName')}
+            </Heading>
+            <Badge color={activeColor} variant="soft" size="1">
+              FY - {selectedRegime === "old" ? "2082/83" : "2083/84"}
+            </Badge>
           </Flex>
-        </Card>
-      </Grid>
+
+          {/* Divider */}
+          <Box style={{ height: 1, background: `var(--${activeColor}-a4)` }} />
+
+          {/* Stats row — 4 columns on desktop, 2×2 on mobile */}
+          <Grid columns={{ initial: "2", sm: "4" }} gap="4">
+            <Box>
+              <Text size="1" color="gray" as="div" mb="1" style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+                Total Gross Income
+              </Text>
+              <Text size="3" weight="bold" className="tnum" style={{ color: `var(--${activeColor}-12)` }}>
+                {npr(activeVarResult.totalGrossIncome, language, currency)}
+              </Text>
+            </Box>
+            <Box>
+              <Text size="1" color="gray" as="div" mb="1" style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+                Total Deductions
+              </Text>
+              <Text size="3" weight="bold" className="tnum" style={{ color: "var(--gray-11)" }}>
+                {npr(activeVarResult.totalDeductions, language, currency)}
+              </Text>
+            </Box>
+            <Box>
+              <Text size="1" color="gray" as="div" mb="1" style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+                Taxable Income
+              </Text>
+              <Text size="3" weight="bold" className="tnum" style={{ color: `var(--${activeColor}-12)` }}>
+                {npr(activeVarResult.taxableIncome, language, currency)}
+              </Text>
+            </Box>
+            <Box>
+              <Text size="1" color="gray" as="div" mb="1" style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+                Total Annual TDS
+              </Text>
+              <Text size="3" weight="bold" className="tnum" color={activeColor}>
+                {npr(activeVarResult.totalTax, language, currency)}
+              </Text>
+            </Box>
+          </Grid>
+        </Flex>
+      </Box>
+
+      {/* Allowed Deductions Table */}
+      <Box
+        style={{
+          background: "var(--gray-1)",
+          border: "1px solid var(--gray-a4)",
+          borderRadius: "var(--radius-4)",
+          overflow: "hidden",
+        }}
+      >
+        <Box px="4" py="3" style={{ background: "var(--gray-3)", borderBottom: "1px solid var(--gray-a4)" }}>
+          <Text size="1" weight="bold" color="gray" style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            {t('allowedDeductions')}
+          </Text>
+        </Box>
+        <Table.Root variant="ghost" style={{ border: "none", width: "100%" }}>
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeaderCell style={{ padding: "10px 16px", color: "var(--gray-11)", fontWeight: 600 }}>
+                {t('deductionsLabel')}
+              </Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                {t('enteredAmount')}
+              </Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                {t('allowedAmount')}
+              </Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {activeVarResult.regimeResult.deductionBreakdown.map((item, i) => {
+              const label = item.key === "retirement"
+                ? t('retirementFund')
+                : item.key === "lifeInsurance"
+                  ? t('lifeInsurance')
+                  : item.key === "medicalInsurance"
+                    ? t('medicalInsurance')
+                    : t('donations');
+              return (
+                <Table.Row
+                  key={item.key}
+                  style={{
+                    borderTop: "1px solid var(--gray-a3)",
+                    background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)",
+                  }}
+                >
+                  <Table.Cell style={{ padding: "12px 16px" }}>
+                    <Flex align="center" gap="2" wrap="wrap">
+                      <Text size="2" color="gray" weight="medium">{label}</Text>
+                      {item.capped && (
+                        <Badge color="amber" variant="soft" size="1" radius="full">
+                          {t('capped')}
+                        </Badge>
+                      )}
+                    </Flex>
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", color: "var(--gray-11)" }}>
+                    {npr(item.entered, language, currency)}
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "var(--gray-12)" }}>
+                    {npr(item.allowed, language, currency)}
+                  </Table.Cell>
+                </Table.Row>
+              );
+            })}
+          </Table.Body>
+        </Table.Root>
+      </Box>
 
       {/* Tax Slab Breakdown for selected regime */}
       <Heading size="5" mt="4">Tax Slab Breakdown (Annual)</Heading>

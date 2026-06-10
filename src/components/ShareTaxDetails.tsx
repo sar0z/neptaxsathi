@@ -44,7 +44,7 @@ function plainTextSummary(
     // Single-regime text output
     const row = rows[selectedRegimeIdx] ?? rows[0];
     const lines = [
-      `Regime: ${row.label}`,
+      `Tax Schedule: ${row.label}`,
       `Yearly income tax:        ${currencyFormatter(row.result.totalTaxYearly)}`,
       `Monthly tax (Avg):        ${currencyFormatter(row.monthlyTax)}`,
       `Monthly salary (Avg):     ${currencyFormatter(row.monthlySalary)}`,
@@ -199,8 +199,8 @@ function PrintableLayout({
         <Box>
           <Text size="1" weight="bold" color="gray" className="share-eyebrow">
             {comparisonEnabled
-              ? `${t("fy")} ${t("oldFiscalYear")} / ${t("newFiscalYear")}`
-              : `${t("fy")} ${selectedRegime === "old" ? t("oldFiscalYear") : t("newFiscalYear")}`
+              ? `${t("fy")} - ${t("oldFiscalYear")} / ${t("newFiscalYear")}`
+              : `${t("fy")} - ${selectedRegime === "old" ? t("oldFiscalYear") : t("newFiscalYear")}`
             }
           </Text>
           <Heading size="6" as="h2" mt="1">
