@@ -1,0 +1,105 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="logoBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B132B" />
+      <stop offset="100%" stop-color="#1C2541" />
+    </linearGradient>
+
+    <!-- Center Mountain Gradient -->
+    <linearGradient id="mountainCenterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+
+    <!-- Left Mountain Gradient -->
+    <linearGradient id="mountainLeftGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+
+    <!-- Right Mountain Gradient (Nepal Crimson & Gold) -->
+    <linearGradient id="mountainRightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D97706" />
+      <stop offset="50%" stop-color="#991B1B" />
+      <stop offset="100%" stop-color="#7F1D1D" />
+    </linearGradient>
+
+    <!-- Snow Cap Gradient -->
+    <linearGradient id="snowCapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+
+    <!-- Chart Bars Gradient -->
+    <linearGradient id="barChartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#14B8A6" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+
+    <!-- Growth Arrow Gradient -->
+    <linearGradient id="growthArrowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="50%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main Badge Background -->
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#logoBgGrad)" />
+
+  <!-- Background Mountain Peak (Right) -->
+  <path d="M 45 85 L 68 38 L 90 85 Z" fill="url(#mountainRightGrad)" />
+  <!-- Right Peak Snow Cap -->
+  <path d="M 62 48 L 68 38 L 74 48 L 71 45 L 68 49 L 65 45 Z" fill="url(#snowCapGrad)" />
+
+  <!-- Background Chart Bars -->
+  <rect x="20" y="70" width="7" height="15" rx="2" fill="url(#barChartGrad)" fill-opacity="0.35" />
+  <rect x="31" y="60" width="7" height="25" rx="2" fill="url(#barChartGrad)" fill-opacity="0.45" />
+  <rect x="42" y="65" width="7" height="20" rx="2" fill="url(#barChartGrad)" fill-opacity="0.4" />
+  <rect x="53" y="55" width="7" height="30" rx="2" fill="url(#barChartGrad)" fill-opacity="0.5" />
+  <rect x="64" y="50" width="7" height="35" rx="2" fill="url(#barChartGrad)" fill-opacity="0.55" />
+  <rect x="75" y="45" width="7" height="40" rx="2" fill="url(#barChartGrad)" fill-opacity="0.6" />
+
+  <!-- Left Mountain Peak -->
+  <path d="M 10 85 L 32 42 L 55 85 Z" fill="url(#mountainLeftGrad)" />
+  <!-- Left Peak Snow Cap -->
+  <path d="M 27 52 L 32 42 L 37 52 L 35 49 L 32 53 L 29 49 Z" fill="url(#snowCapGrad)" />
+
+  <!-- Center Mountain Peak -->
+  <path d="M 25 85 L 50 28 L 75 85 Z" fill="url(#mountainCenterGrad)" />
+  <!-- Center Peak Snow Cap -->
+  <path d="M 43 44 L 50 28 L 57 44 L 53 40 L 50 45 L 47 40 Z" fill="url(#snowCapGrad)" />
+
+  <!-- Floating Symbols (Percentage & Tax Document) -->
+  <g opacity="0.9">
+    <!-- Percentage Symbol -->
+    <circle cx="41" cy="48" r="2" fill="#FFFFFF" />
+    <circle cx="49" cy="56" r="2" fill="#FFFFFF" />
+    <line x1="48" y1="45" x2="42" y2="59" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" />
+
+    <!-- Document Icon -->
+    <rect x="54" y="45" width="11" height="14" rx="1.5" fill="#FFFFFF" />
+    <line x1="57" y1="49" x2="62" y2="49" stroke="#0F766E" stroke-width="1.2" />
+    <line x1="57" y1="52" x2="62" y2="52" stroke="#0F766E" stroke-width="1.2" />
+    <line x1="57" y1="55" x2="60" y2="55" stroke="#0F766E" stroke-width="1.2" />
+  </g>
+
+  <!-- Rising Trend Arrow -->
+  <path
+    d="M 15 68 L 32 60 L 50 72 L 85 33"
+    stroke="url(#growthArrowGrad)"
+    stroke-width="5.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <path
+    d="M 70 33 L 85 33 L 85 48"
+    stroke="url(#growthArrowGrad)"
+    stroke-width="5.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>

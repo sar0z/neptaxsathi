@@ -49,6 +49,8 @@ export function calculateAllowedDeductions(
   input: TaxInput
 ): { breakdown: DeductionComputation[]; total: number } {
   const d = input.deductions;
+  
+  // 1. Retirement Fund
   const retirementEntered =
     Math.max(0, d.ssf || 0) +
     Math.max(0, d.pf || 0) +
@@ -58,9 +60,37 @@ export function calculateAllowedDeductions(
     Math.max(0, incomeBeforeRetirementDeduction) / 3,
     500_000
   );
+
+  let remainingIncome = Math.max(0, incomeBeforeRetirementDeduction - retirementLimit);
+
+  // 2. Remote Area Allowance
+  const remoteAreaCategory = input.remoteAreaCategory || "none";
+  let remoteAreaAmount = 0;
+  if (remoteAreaCategory === "A") remoteAreaAmount = 50_000;
+  else if (remoteAreaCategory === "B") remoteAreaAmount = 40_000;
+  else if (remoteAreaCategory === "C") remoteAreaAmount = 30_000;
+  else if (remoteAreaCategory === "D") remoteAreaAmount = 20_000;
+  else if (remoteAreaCategory === "E") remoteAreaAmount = 10_000;
+
+  const remoteAreaAllowed = Math.min(remoteAreaAmount, remainingIncome);
+  remainingIncome = Math.max(0, remainingIncome - remoteAreaAllowed);
+
+  // 3. Life Insurance
   const lifeEntered = Math.max(0, d.insurance || 0);
+  const lifeAllowed = Math.min(lifeEntered, 40_000, remainingIncome);
+  remainingIncome = Math.max(0, remainingIncome - lifeAllowed);
+
+  // 4. Medical Insurance
   const medicalEntered = Math.max(0, d.medicalInsurance || 0);
+  const medicalAllowed = Math.min(medicalEntered, 20_000, remainingIncome);
+  remainingIncome = Math.max(0, remainingIncome - medicalAllowed);
+
+  // 5. Donations
+  // Adjusted taxable income is before donations but after all other deductions
+  const adjustedTaxableIncome = Math.max(0, incomeBeforeRetirementDeduction - retirementLimit - remoteAreaAllowed - lifeAllowed - medicalAllowed);
   const donationsEntered = Math.max(0, d.donations || 0);
+  const donationCap = Math.min(100_000, adjustedTaxableIncome * 0.05);
+  const donationsAllowed = Math.min(donationsEntered, donationCap, remainingIncome);
 
   const breakdown: DeductionComputation[] = [
     {
@@ -71,25 +101,32 @@ export function calculateAllowedDeductions(
       capped: retirementLimit < retirementEntered,
     },
     {
+      key: "remoteArea",
+      label: "Remote area allowance",
+      entered: round2(remoteAreaAmount),
+      allowed: round2(remoteAreaAllowed),
+      capped: false,
+    },
+    {
       key: "lifeInsurance",
       label: "Life insurance",
       entered: round2(lifeEntered),
-      allowed: round2(Math.min(lifeEntered, 40_000)),
+      allowed: round2(lifeAllowed),
       capped: lifeEntered > 40_000,
     },
     {
       key: "medicalInsurance",
       label: "Medical insurance",
       entered: round2(medicalEntered),
-      allowed: round2(Math.min(medicalEntered, 20_000)),
+      allowed: round2(medicalAllowed),
       capped: medicalEntered > 20_000,
     },
     {
       key: "donations",
       label: "Donations",
       entered: round2(donationsEntered),
-      allowed: round2(donationsEntered),
-      capped: false,
+      allowed: round2(donationsAllowed),
+      capped: donationsEntered > donationCap,
     },
   ];
 
@@ -263,7 +300,8 @@ export function calculateVariableTDS(
         insurance: input.insurance,
         medicalInsurance: input.medicalInsurance,
         donations: input.donations,
-      }
+      },
+      remoteAreaCategory: input.remoteAreaCategory,
     };
 
     // Calculate projected annual tax
@@ -316,7 +354,8 @@ export function calculateVariableTDS(
       insurance: input.insurance,
       medicalInsurance: input.medicalInsurance,
       donations: input.donations,
-    }
+    },
+    remoteAreaCategory: input.remoteAreaCategory,
   };
 
   const regimeResult = calculateRegime(finalAnnualInput, regime);

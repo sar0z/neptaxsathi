@@ -180,6 +180,23 @@ function DeductionsTabContent({
           language={language}
           layout="vertical"
         />
+        <Flex direction="column" gap="1">
+          <Text size="1" color="gray" weight="medium">{t('remoteAreaCategory')}</Text>
+          <Select.Root
+            value={varInput.remoteAreaCategory || "none"}
+            onValueChange={(v) => setVarInput((p) => ({ ...p, remoteAreaCategory: v as any }))}
+          >
+            <Select.Trigger style={{ width: "100%", cursor: "pointer", height: 40, borderRadius: "var(--radius-3)", fontWeight: 600 }} />
+            <Select.Content position="popper">
+              <Select.Item value="none">{t('none')}</Select.Item>
+              <Select.Item value="A">{t('categoryA')}</Select.Item>
+              <Select.Item value="B">{t('categoryB')}</Select.Item>
+              <Select.Item value="C">{t('categoryC')}</Select.Item>
+              <Select.Item value="D">{t('categoryD')}</Select.Item>
+              <Select.Item value="E">{t('categoryE')}</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        </Flex>
       </Flex>
     </Flex>
   );
@@ -1031,11 +1048,13 @@ export default function MonthlyEntry({ onBack: _onBack, selectedRegime, onRegime
             {activeVarResult.regimeResult.deductionBreakdown.map((item, i) => {
               const label = item.key === "retirement"
                 ? t('retirementFund')
-                : item.key === "lifeInsurance"
-                  ? t('lifeInsurance')
-                  : item.key === "medicalInsurance"
-                    ? t('medicalInsurance')
-                    : t('donations');
+                : item.key === "remoteArea"
+                  ? t('remoteAreaAllowance')
+                  : item.key === "lifeInsurance"
+                    ? t('lifeInsurance')
+                    : item.key === "medicalInsurance"
+                      ? t('medicalInsurance')
+                      : t('donations');
               return (
                 <Table.Row
                   key={item.key}

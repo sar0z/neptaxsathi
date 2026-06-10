@@ -247,6 +247,28 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <MoneyInputRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyInputRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyInputRow label={t('medicalInsurance')} value={input.deductions.medicalInsurance} onChange={(v) => setDed("medicalInsurance", v)} onCalculator={() => openCalculator('deductions', 'medicalInsurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <Flex align="center" justify="between" gap="3">
+              <Text size="2" color="gray">
+                {t('remoteAreaCategory')}
+              </Text>
+              <Box style={{ width: 200, flexShrink: 0 }}>
+                <Select.Root
+                  value={input.remoteAreaCategory || "none"}
+                  onValueChange={(v) => setInput((p) => ({ ...p, remoteAreaCategory: v as any }))}
+                  size="3"
+                >
+                  <Select.Trigger radius="large" style={{ width: "100%", textAlign: "right" }} />
+                  <Select.Content position="popper">
+                    <Select.Item value="none">{t('none')}</Select.Item>
+                    <Select.Item value="A">{t('categoryA')}</Select.Item>
+                    <Select.Item value="B">{t('categoryB')}</Select.Item>
+                    <Select.Item value="C">{t('categoryC')}</Select.Item>
+                    <Select.Item value="D">{t('categoryD')}</Select.Item>
+                    <Select.Item value="E">{t('categoryE')}</Select.Item>
+                  </Select.Content>
+                </Select.Root>
+              </Box>
+            </Flex>
             <MoneyInputRow label={t('donations')} value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix={t('perYear')} currency={t('currency')} language={language} />
 
             <SwitchRow
