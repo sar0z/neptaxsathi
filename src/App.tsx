@@ -62,9 +62,59 @@ import { useTranslation } from "./i18n/LanguageContext";
 
 import DataEntry from "./components/DataEntry";
 import Calculation from "./components/Calculation";
+import MonthlyEntry from "./components/MonthlyEntry";
 import Information from "./components/Information";
 import DeveloperInfo from "./components/DeveloperInfo";
-import { EditIcon, ChartIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon } from "./components/icons";
+import { EditIcon, InfoIcon, AppLogoIcon, SunIcon, MoonIcon, TableIcon } from "./components/icons";
+
+const MONTH_NAMES_APP = [
+  "Shrawan", "Bhadra", "Ashwin", "Kartik", "Mangsir", "Poush",
+  "Magh", "Falgun", "Chaitra", "Baishakh", "Jestha", "Ashadh"
+];
+
+export interface MonthlyRowData {
+  id: string;
+  monthName: string;
+  basicSalary: number;
+  ssf: number;
+  pf: number;
+  cit: number;
+}
+
+export interface VarInputState {
+  fiscalYear: string;
+  taxpayerType: "individual" | "couple";
+  contributingSSF: boolean;
+  isFemaleOnlyRemuneration: boolean;
+  annualAllowance: number;
+  annualBonus: number;
+  otherIncome: number;
+  insurance: number;
+  medicalInsurance: number;
+  donations: number;
+  monthsData: MonthlyRowData[];
+}
+
+const createDefaultVarInput = (): VarInputState => ({
+  fiscalYear: "2082/83",
+  taxpayerType: "individual",
+  contributingSSF: false,
+  isFemaleOnlyRemuneration: false,
+  annualAllowance: 0,
+  annualBonus: 0,
+  otherIncome: 0,
+  insurance: 0,
+  medicalInsurance: 0,
+  donations: 0,
+  monthsData: MONTH_NAMES_APP.map((m) => ({
+    id: crypto.randomUUID(),
+    monthName: m,
+    basicSalary: 0,
+    ssf: 0,
+    pf: 0,
+    cit: 0,
+  })),
+});
 
 declare global {
   interface Window {
@@ -94,7 +144,7 @@ const DEFAULT_INPUT: TaxInput = {
   },
 };
 
-const TABS = ["entry", "calc", "info"] as const;
+const TABS = ["entry", "variable", "calc", "info"] as const;
 type TabKey = (typeof TABS)[number];
 
 export default function App() {
@@ -107,17 +157,39 @@ export default function App() {
   const { language, setLanguage, t } = useTranslation();
 
   const NAV = [
-    { key: "entry" as const, label: t('navEntry'), Icon: EditIcon },
-    { key: "calc" as const, label: t('navResults'), Icon: ChartIcon },
-    { key: "info" as const, label: t('navInfo'), Icon: InfoIcon },
+    { key: "entry" as const, label: t('annualTaxCalc'), Icon: EditIcon },
+    { key: "variable" as const, label: t('variableTaxCalc'), Icon: TableIcon },
   ];
 
   const [input, setInput] = useState<TaxInput>(DEFAULT_INPUT);
+  const [varInput, setVarInput] = useState<VarInputState>(createDefaultVarInput);
   const [tab, setTab] = useState<TabKey>("entry");
   const [infoOpen, setInfoOpen] = useState(false);
   const [appInfoOpen, setAppInfoOpen] = useState(false);
   const isDesktop = useIsDesktop();
-  const tabIndex = TABS.indexOf(tab);
+
+  // Comparison toggle state (persisted)
+  const [comparisonEnabled, setComparisonEnabled] = useState<boolean>(() =>
+    localStorage.getItem("comparison-enabled") !== "false"
+  );
+  // Selected tax schedule for single-slab mode (default "old" = current FY 2082/83)
+  const [selectedRegime, setSelectedRegime] = useState<"old" | "new">(() => {
+    const stored = localStorage.getItem("selected-regime");
+    return stored === "new" ? "new" : "old";
+  });
+
+  const handleComparisonToggle = (v: boolean) => {
+    setComparisonEnabled(v);
+    localStorage.setItem("comparison-enabled", String(v));
+    window.umami?.track("comparison-toggle", { enabled: v });
+  };
+
+  const handleRegimeChange = (r: "old" | "new") => {
+    setSelectedRegime(r);
+    localStorage.setItem("selected-regime", r);
+    window.umami?.track("tax-schedule-changed", { schedule: r });
+  };
+
 
   // User ID generation (Removed for now)
 
@@ -161,19 +233,12 @@ export default function App() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 11,
-                  background:
-                    "linear-gradient(135deg, var(--accent-9), var(--accent-10))",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "white",
-                  boxShadow: "0 2px 8px -2px var(--accent-a7)",
                 }}
               >
-                <Box style={{ width: 22, height: 22 }}>
-                  <AppLogoIcon />
-                </Box>
+                <AppLogoIcon style={{ width: "100%", height: "100%" }} />
               </Box>
               <Box style={{ lineHeight: 1.25 }}>
                 <Heading size="4" as="h1" weight="bold">
@@ -184,6 +249,36 @@ export default function App() {
                 </Text>
               </Box>
             </Flex>
+
+            {isDesktop && (
+              <Flex gap="3" align="center">
+                {NAV.map(({ key, label, Icon }) => (
+                  <Button
+                    key={key}
+                    variant={tab === key ? "soft" : "ghost"}
+                    color={tab === key ? "indigo" : "gray"}
+                    onClick={() => handleTabChange(key)}
+                    style={{
+                      cursor: "pointer",
+                      fontWeight: tab === key ? "600" : "500",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      height: "36px",
+                      padding: "0 16px",
+                      whiteSpace: "nowrap",
+                    }}
+                    size="2"
+                  >
+                    <Box style={{ width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon className="w-4 h-4" />
+                    </Box>
+                    <Text size="2">{label}</Text>
+                  </Button>
+                ))}
+              </Flex>
+            )}
+
             <Flex align="center" gap="5">
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
@@ -276,58 +371,91 @@ export default function App() {
 
         {/* Body */}
         {isDesktop ? (
-          /* ===== Desktop: sidebar + main ===== */
-          <Flex style={{ flex: 1, overflow: "hidden" }}>
-            <Box
-              style={{
-                width: 440,
-                flexShrink: 0,
-                borderRight: "1px solid var(--gray-a4)",
-                background: "var(--gray-1)",
-                overflowY: "auto",
-              }}
-            >
-              <Box p="5">
-                <DataEntry input={input} setInput={setInput} />
-              </Box>
-            </Box>
+          /* ===== Desktop views ===== */
+          tab === "variable" ? (
             <Box style={{ flex: 1, overflowY: "auto" }}>
-              <Container size="3" px="6" py="6">
-                <Box mb="5">
-                  <Heading size="6" as="h2">
-                    {t('calculationResults')}
-                  </Heading>
-                  <Text size="2" color="gray" as="div" mt="1">
-                    {t('resultsSubtitle')}
-                  </Text>
-                </Box>
-                <Calculation input={input} />
+              <Container size="4" px="6" py="6">
+                <MonthlyEntry
+                  onBack={() => setTab("entry")}
+                  selectedRegime={selectedRegime}
+                  onRegimeChange={handleRegimeChange}
+                  varInput={varInput}
+                  setVarInput={setVarInput}
+                />
+
               </Container>
             </Box>
-          </Flex>
+          ) : tab === "info" ? (
+            <Box style={{ flex: 1, overflowY: "auto" }}>
+              <Container size="3" px="6" py="6">
+                <Information />
+              </Container>
+            </Box>
+          ) : (
+            /* Standard: split layout for entry and calc */
+            <Flex style={{ flex: 1, overflow: "hidden" }}>
+              <Box
+                style={{
+                  width: 440,
+                  flexShrink: 0,
+                  borderRight: "1px solid var(--gray-a4)",
+                  background: "var(--gray-1)",
+                  overflowY: "auto",
+                }}
+              >
+                <Box p="5">
+                  <DataEntry input={input} setInput={setInput} />
+                </Box>
+              </Box>
+              <Box style={{ flex: 1, overflowY: "auto" }}>
+                <Container size="3" px="6" py="6">
+                  <Box mb="5">
+                    <Heading size="6" as="h2">
+                      {t('calculationResults')}
+                    </Heading>
+                    <Text size="2" color="gray" as="div" mt="1">
+                      {t('resultsSubtitle')}
+                    </Text>
+                  </Box>
+                  <Calculation
+                    input={input}
+                    comparisonEnabled={comparisonEnabled}
+                    onComparisonToggle={handleComparisonToggle}
+                    selectedRegime={selectedRegime}
+                    onRegimeChange={handleRegimeChange}
+                  />
+                </Container>
+              </Box>
+            </Flex>
+          )
         ) : (
           /* ===== Mobile: sliding tabs + custom bottom nav ===== */
           <Flex direction="column" style={{ flex: 1, overflow: "hidden" }}>
-            <Box className="slider-viewport" style={{ flex: 1 }}>
-              <Box
-                className="slider-track"
-                style={{ transform: `translateX(-${tabIndex * 33.3333}%)` }}
-              >
-                <Box className="slider-slide">
-                  <Box p="4">
-                    <DataEntry input={input} setInput={setInput} onCalculate={() => { setTab("calc"); window.umami?.track("calculate-clicked", { taxpayerType: input.taxpayerType }); }} />
-                  </Box>
-                </Box>
-                <Box className="slider-slide">
-                  <Box p="4">
-                    <Calculation input={input} onBack={() => setTab("entry")} />
-                  </Box>
-                </Box>
-                <Box className="slider-slide">
-                  <Box p="4">
-                    <Information />
-                  </Box>
-                </Box>
+            <Box style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+              <Box style={{ display: tab === "entry" ? "block" : "none" }} p="4">
+                <DataEntry input={input} setInput={setInput} onCalculate={() => { setTab("calc"); window.umami?.track("calculate-clicked", { taxpayerType: input.taxpayerType }); }} />
+              </Box>
+              <Box style={{ display: tab === "variable" ? "block" : "none" }} p="4">
+                <MonthlyEntry
+                  onBack={() => setTab("entry")}
+                  selectedRegime={selectedRegime}
+                  onRegimeChange={handleRegimeChange}
+                  varInput={varInput}
+                  setVarInput={setVarInput}
+                />
+              </Box>
+              <Box style={{ display: tab === "calc" ? "block" : "none" }} p="4">
+                <Calculation
+                  input={input}
+                  onBack={() => setTab("entry")}
+                  comparisonEnabled={comparisonEnabled}
+                  onComparisonToggle={handleComparisonToggle}
+                  selectedRegime={selectedRegime}
+                  onRegimeChange={handleRegimeChange}
+                />
+              </Box>
+              <Box style={{ display: tab === "info" ? "block" : "none" }} p="4">
+                <Information />
               </Box>
             </Box>
 
@@ -410,7 +538,7 @@ export default function App() {
                 <Flex align="center" justify="between">
                   <Flex align="center" gap="2">
                     <Box style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--indigo-9)" }} />
-                    <Text size="3" weight="bold">{t('taxSlabs')} · {t('fy')} {t('oldFiscalYear')}</Text>
+                    <Text size="3" weight="bold">{t('taxSlabs')} · {t('fy')} - {t('oldFiscalYear')}</Text>
                   </Flex>
                   <Dialog.Close>
                     <Button variant="ghost" color="gray" size="2" style={{ borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}>
@@ -439,17 +567,12 @@ export default function App() {
                       style={{
                         width: 32,
                         height: 32,
-                        borderRadius: 8,
-                        background: "linear-gradient(135deg, var(--accent-9), var(--accent-10))",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "white",
                       }}
                     >
-                      <Box style={{ width: 18, height: 18 }}>
-                        <AppLogoIcon />
-                      </Box>
+                      <AppLogoIcon style={{ width: "100%", height: "100%" }} />
                     </Box>
                     <Heading size="3" weight="bold">{t('appInfoTitle')}</Heading>
                   </Flex>
