@@ -233,19 +233,12 @@ export default function App() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 11,
-                  background:
-                    "linear-gradient(135deg, var(--accent-9), var(--accent-10))",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "white",
-                  boxShadow: "0 2px 8px -2px var(--accent-a7)",
                 }}
               >
-                <Box style={{ width: 22, height: 22 }}>
-                  <AppLogoIcon />
-                </Box>
+                <AppLogoIcon style={{ width: "100%", height: "100%" }} />
               </Box>
               <Box style={{ lineHeight: 1.25 }}>
                 <Heading size="4" as="h1" weight="bold">
@@ -574,17 +567,12 @@ export default function App() {
                       style={{
                         width: 32,
                         height: 32,
-                        borderRadius: 8,
-                        background: "linear-gradient(135deg, var(--accent-9), var(--accent-10))",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "white",
                       }}
                     >
-                      <Box style={{ width: 18, height: 18 }}>
-                        <AppLogoIcon />
-                      </Box>
+                      <AppLogoIcon style={{ width: "100%", height: "100%" }} />
                     </Box>
                     <Heading size="3" weight="bold">{t('appInfoTitle')}</Heading>
                   </Flex>

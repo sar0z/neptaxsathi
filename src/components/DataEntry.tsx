@@ -1,18 +1,19 @@
 import {
   TextField,
-  Switch,
   Flex,
   Text,
   Box,
   Button,
   Select,
 } from "@radix-ui/themes";
-import { PersonIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
 import type { TaxInput } from "../engine/types";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import { useTranslation } from "../i18n/LanguageContext";
 import Calculator from "./Calculator";
+import { TaxpayerTypeSelector, SwitchRow, MoneyInputRow } from "./FormControls";
+import { convertToDevanagari, formatNumberWithCommas, parseFormattedNumber } from "../utils/numberFormat";
+import { CalcIcon } from "./icons";
 
 interface Props {
   input: TaxInput;
@@ -30,116 +31,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Text>
-  );
-}
-
-function convertToDevanagari(numStr: string): string {
-  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
-  return numStr.replace(/[0-9]/g, (digit) => devanagariDigits[parseInt(digit)]);
-}
-
-function formatNumberWithCommas(value: number, language: string = 'en'): string {
-  if (value === 0) return "";
-  const formatted = value.toLocaleString("en-IN");
-  if (language === 'ne') {
-    return convertToDevanagari(formatted);
-  }
-  return formatted;
-}
-
-function parseFormattedNumber(value: string): number {
-  if (!value) return 0;
-  // Convert Devanagari digits to Western digits
-  const devanagariToWestern: Record<string, string> = {
-    '०': '0', '१': '1', '२': '2', '३': '3', '४': '4',
-    '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'
-  };
-  const westernValue = value.replace(/[०१२३४५६७८९]/g, (digit) => devanagariToWestern[digit]);
-  // Remove commas and convert to number
-  const parsed = parseInt(westernValue.replace(/,/g, ""), 10);
-  return isNaN(parsed) ? 0 : parsed;
-}
-
-const CalcIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M5 5h1M5 8h1M5 11h1M8 5h3M8 8h3M8 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-function MoneyRow({
-  label,
-  value,
-  onChange,
-  disabled = false,
-  onCalculator,
-  suffix,
-  currency,
-  language,
-}: {
-  label: string;
-  value: number;
-  onChange: (n: number) => void;
-  disabled?: boolean;
-  onCalculator?: () => void;
-  suffix?: string;
-  currency?: string;
-  language?: string;
-}) {
-  return (
-    <label>
-      <Flex align="center" justify="between" gap="3">
-        <Text size="2" color="gray" style={{ opacity: disabled ? 0.5 : 1 }}>
-          {label}
-        </Text>
-        <Flex align="center" gap="2" style={{ flexShrink: 0 }}>
-          <Box style={{ width: 200 }}>
-            <TextField.Root
-              type="text"
-              inputMode="decimal"
-              pattern="[0-9०१२३४५६७८९]*"
-              min={0}
-              value={formatNumberWithCommas(value, language)}
-              size="3"
-              radius="large"
-              placeholder="0"
-              onChange={(e) => onChange(parseFormattedNumber(e.target.value))}
-              style={{ textAlign: "right" }}
-              className="tnum"
-              disabled={disabled}
-            >
-              <TextField.Slot>
-                <Text size="1" color="gray">
-                  {currency || '₨'}
-                </Text>
-              </TextField.Slot>
-              {onCalculator && (
-                <TextField.Slot side="right">
-                  <Box
-                    onClick={disabled ? undefined : onCalculator}
-                    style={{
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      opacity: disabled ? 0.3 : 0.6,
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "2px 4px",
-                      borderRadius: "var(--radius-1)",
-                    }}
-                  >
-                    <CalcIcon />
-                  </Box>
-                </TextField.Slot>
-              )}
-            </TextField.Root>
-          </Box>
-          {suffix && (
-            <Text size="1" color="gray" style={{ opacity: disabled ? 0.5 : 0.7, whiteSpace: "nowrap" }}>
-              {suffix}
-            </Text>
-          )}
-        </Flex>
-      </Flex>
-    </label>
   );
 }
 
@@ -201,49 +92,12 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <Text size="1" color="gray" as="div" mb="2">
               {t('taxpayerType')}
             </Text>
-            <Flex gap="2">
-              <Box
-                onClick={() => setInput((p) => ({ ...p, taxpayerType: "individual" }))}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  borderRadius: "var(--radius-3)",
-                  border: input.taxpayerType === "individual" ? "2px solid var(--indigo-9)" : "1px solid var(--gray-a3)",
-                  background: input.taxpayerType === "individual" ? "var(--indigo-2)" : "var(--gray-2)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <Flex align="center" gap="2" justify="center">
-                  <PersonIcon width="18" height="18" style={{ color: input.taxpayerType === "individual" ? "var(--indigo-11)" : "var(--gray-11)" }} />
-                  <Text size="2" weight={input.taxpayerType === "individual" ? "bold" : "medium"} style={{ color: input.taxpayerType === "individual" ? "var(--indigo-11)" : "var(--gray-11)" }}>
-                    {t('individual')}
-                  </Text>
-                </Flex>
-              </Box>
-              <Box
-                onClick={() => setInput((p) => ({ ...p, taxpayerType: "couple" }))}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  borderRadius: "var(--radius-3)",
-                  border: input.taxpayerType === "couple" ? "2px solid var(--indigo-9)" : "1px solid var(--gray-a3)",
-                  background: input.taxpayerType === "couple" ? "var(--indigo-2)" : "var(--gray-2)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <Flex align="center" gap="2" justify="center">
-                  <Flex gap="-4">
-                    <PersonIcon width="18" height="18" style={{ color: input.taxpayerType === "couple" ? "var(--indigo-11)" : "var(--gray-11)" }} />
-                    <PersonIcon width="18" height="18" style={{ color: input.taxpayerType === "couple" ? "var(--indigo-11)" : "var(--gray-11)" }} />
-                  </Flex>
-                  <Text size="2" weight={input.taxpayerType === "couple" ? "bold" : "medium"} style={{ color: input.taxpayerType === "couple" ? "var(--indigo-11)" : "var(--gray-11)" }}>
-                    {t('couple')}
-                  </Text>
-                </Flex>
-              </Box>
-            </Flex>
+            <TaxpayerTypeSelector
+              value={input.taxpayerType}
+              onChange={(val) => setInput((p) => ({ ...p, taxpayerType: val }))}
+              individualLabel={t('individual')}
+              coupleLabel={t('couple')}
+            />
           </Box>
         </Flex>
       </Flex>
@@ -357,9 +211,9 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
               </Flex>
             </label>
 
-            <MoneyRow label={t('bonus')} value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('allowance')} value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('otherIncome')} value={input.income.otherIncome} onChange={(v) => setIncome("otherIncome", v)} onCalculator={() => openCalculator('income', 'otherIncome')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('bonus')} value={input.income.bonus} onChange={(v) => setIncome("bonus", v)} onCalculator={() => openCalculator('income', 'bonus')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('allowance')} value={input.income.allowance} onChange={(v) => setIncome("allowance", v)} onCalculator={() => openCalculator('income', 'allowance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('otherIncome')} value={input.income.otherIncome} onChange={(v) => setIncome("otherIncome", v)} onCalculator={() => openCalculator('income', 'otherIncome')} suffix={t('perYear')} currency={t('currency')} language={language} />
           </Flex>
         </Box>
       </Flex>
@@ -376,78 +230,33 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
           }}
         >
           <Flex direction="column" gap="3">
-            {/* SSF toggle */}
-            <Flex
-              asChild
-              align="center"
-              justify="between"
-              gap="3"
-              p="3"
-              style={{
-                background: "var(--gray-2)",
-                border: "1px solid var(--gray-a3)",
-                borderRadius: "var(--radius-3)",
+            <SwitchRow
+              label={t('contributingSSF')}
+              description={t('ssfNote')}
+              checked={input.contributingSSF}
+              onCheckedChange={(v) => {
+                setInput((p) => ({ ...p, contributingSSF: v }));
+                if (!v) {
+                  setDed("ssf", 0);
+                }
               }}
-            >
-              <label>
-                <Box>
-                  <Text as="div" size="2" weight="medium">
-                    {t('contributingSSF')}
-                  </Text>
-                  <Text as="div" size="1" color="gray">
-                    {t('ssfNote')}
-                  </Text>
-                </Box>
-                <Switch
-                  checked={input.contributingSSF}
-                  size="3"
-                  onCheckedChange={(v) => {
-                    setInput((p) => ({ ...p, contributingSSF: v }));
-                    if (!v) {
-                      setDed("ssf", 0);
-                    }
-                  }}
-                />
-              </label>
-            </Flex>
+            />
 
-            <MoneyRow label={t('ssf')} value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('providentFund')} value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('medicalInsurance')} value={input.deductions.medicalInsurance} onChange={(v) => setDed("medicalInsurance", v)} onCalculator={() => openCalculator('deductions', 'medicalInsurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
-            <MoneyRow label={t('donations')} value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('ssf')} value={input.deductions.ssf} onChange={(v) => setDed("ssf", v)} disabled={!input.contributingSSF} onCalculator={() => openCalculator('deductions', 'ssf')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('providentFund')} value={input.deductions.pf} onChange={(v) => setDed("pf", v)} onCalculator={() => openCalculator('deductions', 'pf')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('medicalInsurance')} value={input.deductions.medicalInsurance} onChange={(v) => setDed("medicalInsurance", v)} onCalculator={() => openCalculator('deductions', 'medicalInsurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('donations')} value={input.deductions.donations} onChange={(v) => setDed("donations", v)} onCalculator={() => openCalculator('deductions', 'donations')} suffix={t('perYear')} currency={t('currency')} language={language} />
 
-            <Flex
-              asChild
-              align="center"
-              justify="between"
-              gap="3"
-              p="3"
-              style={{
-                background: "var(--gray-2)",
-                border: "1px solid var(--gray-a3)",
-                borderRadius: "var(--radius-3)",
-              }}
-            >
-              <label>
-                <Box>
-                  <Text as="div" size="2" weight="medium">
-                    {t('femaleOnlyRemuneration')}
-                  </Text>
-                  <Text as="div" size="1" color="gray">
-                    {t('femaleOnlyRemunerationNote')}
-                  </Text>
-                </Box>
-                <Switch
-                  checked={input.isFemaleOnlyRemuneration}
-                  size="3"
-                  onCheckedChange={(v) =>
-                    setInput((p) => ({ ...p, isFemaleOnlyRemuneration: v }))
-                  }
-                />
-              </label>
-            </Flex>
+            <SwitchRow
+              label={t('femaleOnlyRemuneration')}
+              description={t('femaleOnlyRemunerationNote')}
+              checked={input.isFemaleOnlyRemuneration}
+              onCheckedChange={(v) =>
+                setInput((p) => ({ ...p, isFemaleOnlyRemuneration: v }))
+              }
+            />
           </Flex>
         </Box>
       </Flex>
