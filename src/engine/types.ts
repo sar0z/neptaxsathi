@@ -28,6 +28,7 @@ export interface TaxInput {
   months: number; // months used for the period (default 12)
   income: IncomeInput;
   deductions: DeductionInput;
+  remoteAreaCategory?: "none" | "A" | "B" | "C" | "D" | "E";
 }
 
 export interface MonthlyInputRow {
@@ -50,6 +51,7 @@ export interface VariableTaxInput {
   medicalInsurance: number; // Annual medical insurance
   donations: number;       // Annual donations
   monthsData: MonthlyInputRow[];
+  remoteAreaCategory?: "none" | "A" | "B" | "C" | "D" | "E";
 }
 
 
@@ -82,7 +84,7 @@ export interface SlabComputation {
 }
 
 export interface DeductionComputation {
-  key: "retirement" | "lifeInsurance" | "medicalInsurance" | "donations";
+  key: "retirement" | "lifeInsurance" | "medicalInsurance" | "donations" | "remoteArea";
   label: string;
   entered: number;
   allowed: number;

@@ -17,6 +17,7 @@ const input = (overrides: TaxInputOverrides = {}): TaxInput => {
     contributingSSF: false,
     isFemaleOnlyRemuneration: false,
     months: 12,
+    remoteAreaCategory: "none",
     ...rest,
     income: {
       salary: 0,
@@ -134,8 +135,71 @@ assert.equal(
       deductions: { donations: 200_000 },
     })
   );
-  assert.equal(actual.taxableIncome, 0);
-  assert.equal(actual.totalTaxYearly, 0);
+  assert.equal(actual.totalDeductions, 5_000); // capped at 5% of 100k
+  assert.equal(actual.taxableIncome, 95_000);
+  assert.equal(actual.totalTaxYearly, 950);
+}
+
+// Test donation cap at Rs 100,000
+{
+  const actual = result(
+    input({
+      income: { salary: 3_000_000 }, // 30 Lakhs
+      deductions: { donations: 200_000 },
+    })
+  );
+  // 5% of 3M is 150k, but cap is absolute Rs 100,000
+  assert.equal(actual.totalDeductions, 100_000);
+  assert.equal(actual.taxableIncome, 2_900_000);
+}
+
+// Test remote area benefits
+{
+  const actualA = result(
+    input({
+      income: { salary: 500_000 },
+      remoteAreaCategory: "A", // Rs 50,000 deduction
+    })
+  );
+  assert.equal(actualA.totalDeductions, 50_000);
+  assert.equal(actualA.taxableIncome, 450_000);
+  assert.equal(actualA.totalTaxYearly, 4_500); // 1% of 450k
+
+  const actualB = result(
+    input({
+      income: { salary: 500_000 },
+      remoteAreaCategory: "B", // Rs 40,000 deduction
+    })
+  );
+  assert.equal(actualB.totalDeductions, 40_000);
+  assert.equal(actualB.taxableIncome, 460_000);
+
+  const actualC = result(
+    input({
+      income: { salary: 500_000 },
+      remoteAreaCategory: "C", // Rs 30,000 deduction
+    })
+  );
+  assert.equal(actualC.totalDeductions, 30_000);
+  assert.equal(actualC.taxableIncome, 470_000);
+
+  const actualD = result(
+    input({
+      income: { salary: 500_000 },
+      remoteAreaCategory: "D", // Rs 20,000 deduction
+    })
+  );
+  assert.equal(actualD.totalDeductions, 20_000);
+  assert.equal(actualD.taxableIncome, 480_000);
+
+  const actualE = result(
+    input({
+      income: { salary: 500_000 },
+      remoteAreaCategory: "E", // Rs 10,000 deduction
+    })
+  );
+  assert.equal(actualE.totalDeductions, 10_000);
+  assert.equal(actualE.taxableIncome, 490_000);
 }
 
 console.log("taxEngine tests passed");

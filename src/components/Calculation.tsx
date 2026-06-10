@@ -76,6 +76,7 @@ export default function Calculation({ input, onBack: _onBack, comparisonEnabled,
 
   const deductionLabel = (key: string) => {
     if (key === "retirement") return t('retirementFund');
+    if (key === "remoteArea") return t('remoteAreaAllowance');
     if (key === "lifeInsurance") return t('lifeInsurance');
     if (key === "medicalInsurance") return t('medicalInsurance');
     return t('donations');
