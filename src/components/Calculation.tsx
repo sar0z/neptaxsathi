@@ -729,32 +729,79 @@ export default function Calculation({ input, onBack: _onBack, comparisonEnabled,
               <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
                 {t('enteredAmount')}
               </Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
-                {t('allowedAmount')}
-              </Table.ColumnHeaderCell>
+              {comparisonEnabled ? (
+                <>
+                  <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                    {t('oldSlab')}
+                  </Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                    {t('newSlab')}
+                  </Table.ColumnHeaderCell>
+                </>
+              ) : (
+                <Table.ColumnHeaderCell style={{ padding: "10px 16px", textAlign: "right", color: "var(--gray-11)", fontWeight: 600 }}>
+                  {t('allowedAmount')}
+                </Table.ColumnHeaderCell>
+              )}
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {displayResult.deductionBreakdown.map((item, i) => (
-              <Table.Row key={item.key} style={{ borderTop: "1px solid var(--gray-a3)", background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
-                <Table.Cell style={{ padding: "12px 16px" }}>
-                  <Flex align="center" gap="2">
-                    <Text size="2" color="gray" weight="medium">{deductionLabel(item.key)}</Text>
-                    {item.capped && (
-                      <Badge color="amber" variant="soft" size="1" radius="full">
-                        {t('capped')}
-                      </Badge>
-                    )}
-                  </Flex>
-                </Table.Cell>
-                <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", color: "var(--gray-11)" }}>
-                  {npr(item.entered, language, currency)}
-                </Table.Cell>
-                <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "var(--gray-12)" }}>
-                  {npr(item.allowed, language, currency)}
-                </Table.Cell>
-              </Table.Row>
-            ))}
+            {comparisonEnabled ? (
+              oldResult.deductionBreakdown.map((item, i) => {
+                const newItem = newResult.deductionBreakdown.find(d => d.key === item.key) || item;
+                return (
+                  <Table.Row key={item.key} style={{ borderTop: "1px solid var(--gray-a3)", background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
+                    <Table.Cell style={{ padding: "12px 16px" }}>
+                      <Text size="2" color="gray" weight="medium">{deductionLabel(item.key)}</Text>
+                    </Table.Cell>
+                    <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", color: "var(--gray-11)" }}>
+                      {npr(item.entered, language, currency)}
+                    </Table.Cell>
+                    <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "var(--indigo-11)" }}>
+                      <Flex align="center" gap="1" justify="end">
+                        {npr(item.allowed, language, currency)}
+                        {item.capped && (
+                          <Badge color="indigo" variant="soft" size="1" radius="full">
+                            {t('capped')}
+                          </Badge>
+                        )}
+                      </Flex>
+                    </Table.Cell>
+                    <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "var(--teal-11)" }}>
+                      <Flex align="center" gap="1" justify="end">
+                        {npr(newItem.allowed, language, currency)}
+                        {newItem.capped && (
+                          <Badge color="teal" variant="soft" size="1" radius="full">
+                            {t('capped')}
+                          </Badge>
+                        )}
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })
+            ) : (
+              activeResult.deductionBreakdown.map((item, i) => (
+                <Table.Row key={item.key} style={{ borderTop: "1px solid var(--gray-a3)", background: i % 2 === 0 ? "var(--color-panel-solid)" : "var(--gray-2)" }}>
+                  <Table.Cell style={{ padding: "12px 16px" }}>
+                    <Flex align="center" gap="2">
+                      <Text size="2" color="gray" weight="medium">{deductionLabel(item.key)}</Text>
+                      {item.capped && (
+                        <Badge color="amber" variant="soft" size="1" radius="full">
+                          {t('capped')}
+                        </Badge>
+                      )}
+                    </Flex>
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", color: "var(--gray-11)" }}>
+                    {npr(item.entered, language, currency)}
+                  </Table.Cell>
+                  <Table.Cell className="tnum" style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: "var(--gray-12)" }}>
+                    {npr(item.allowed, language, currency)}
+                  </Table.Cell>
+                </Table.Row>
+              ))
+            )}
           </Table.Body>
         </Table.Root>
       </Box>
