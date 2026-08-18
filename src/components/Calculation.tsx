@@ -79,6 +79,7 @@ export default function Calculation({ input, onBack: _onBack, comparisonEnabled,
     if (key === "remoteArea") return t('remoteAreaAllowance');
     if (key === "lifeInsurance") return t('lifeInsurance');
     if (key === "medicalInsurance") return t('medicalInsurance');
+    if (key === "education") return t('childrenEducation');
     return t('donations');
   };
 

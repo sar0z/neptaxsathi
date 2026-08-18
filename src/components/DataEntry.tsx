@@ -247,6 +247,7 @@ export default function DataEntry({ input, setInput, onCalculate }: Props) {
             <MoneyInputRow label={t('cit')} value={input.deductions.cit} onChange={(v) => setDed("cit", v)} onCalculator={() => openCalculator('deductions', 'cit')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyInputRow label={t('lifeInsurance')} value={input.deductions.insurance} onChange={(v) => setDed("insurance", v)} onCalculator={() => openCalculator('deductions', 'insurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <MoneyInputRow label={t('medicalInsurance')} value={input.deductions.medicalInsurance} onChange={(v) => setDed("medicalInsurance", v)} onCalculator={() => openCalculator('deductions', 'medicalInsurance')} suffix={t('perYear')} currency={t('currency')} language={language} />
+            <MoneyInputRow label={t('childrenEducation')} value={input.deductions.education || 0} onChange={(v) => setDed("education", v)} onCalculator={() => openCalculator('deductions', 'education')} suffix={t('perYear')} currency={t('currency')} language={language} />
             <Flex align="center" justify="between" gap="3">
               <Text size="2" color="gray">
                 {t('remoteAreaCategory')}

@@ -40,6 +40,8 @@ export const translations = {
     annualBonusOt: 'Annual Bonus / OT',
     lifeInsurancePremium: 'Life Insurance Premium',
     medicalInsurancePremium: 'Medical Insurance Premium',
+    childrenEducation: 'Children Education Fee',
+    childrenEducationPremium: "Children's Education Tuition Fee",
     
     // Settings Dialog
     settings: 'Settings',
@@ -167,7 +169,7 @@ export const translations = {
     sideBySideComparison: 'Side-by-Side Comparison',
     oldVsNewTax: 'FY - 2082/83 vs FY - 2083/84: Compare income tax liability, effective tax rate, net income, and net cash in hand for both assessment years in a single table.',
     ssfBenefit: 'SSF Benefit: Contributing to SSF waives the 1% first-slab social security tax entirely.',
-    deductionCaps: 'Deduction Caps: retirement fund is capped at the lower of actual contribution, one-third of income, or Rs. 5,00,000 · life insurance up to Rs. 40,000 · medical insurance up to Rs. 20,000 · donations up to Rs. 100,000 or 5% of adjusted taxable income · remote area allowance up to Rs. 50,000 depending on region category.',
+    deductionCaps: 'retirement fund is capped at the lower of actual contribution, one-third of income, or Rs. 5,00,000 · life insurance up to Rs. 40,000 · medical insurance up to Rs. 20,000 · children education tuition fee up to 25% of tuition fees or Rs. 25,000 (whichever is less, for FY 2083/84 onwards) · donations up to Rs. 100,000 or 5% of adjusted taxable income · remote area allowance up to Rs. 50,000 depending on region category.',
     individualCouple: 'Individual & Couple: Slab thresholds automatically adjust based on taxpayer type.',
     privacyDisclaimer: 'Privacy & Disclaimer',
     noDataStored: 'No data is stored or transmitted. All calculations run entirely in your browser. We do not collect, store, or share any of your financial information.',
@@ -234,6 +236,8 @@ export const translations = {
     annualBonusOt: 'वार्षिक बोनस / OT',
     lifeInsurancePremium: 'जीवन बीमा प्रिमियम',
     medicalInsurancePremium: 'चिकित्सा बीमा प्रिमियम',
+    childrenEducation: 'छोराछोरीको शिक्षा शुल्क',
+    childrenEducationPremium: 'छोराछोरीको शिक्षा शुल्क',
     
     // Settings Dialog
     settings: 'सेटिङहरू',
@@ -361,7 +365,7 @@ export const translations = {
     sideBySideComparison: 'पक्ष-दर-पक्ष तुलना',
     oldVsNewTax: 'आव - २०८२/८३ र आव - २०८३/८४: दुवै निर्धारण वर्षको आम्दानी कर दायित्व, प्रभावकारी कर दर, शुद्ध आम्दानी र हातमा नगद एउटै तालिकामा तुलना गर्नुहोस्।',
     ssfBenefit: 'सामाजिक सुरक्षा कोष फाइदा: सामाजिक सुरक्षा कोषमा योगदान गर्नाले पहिलो तहको १% सामाजिक सुरक्षा कर पूर्ण रूपमा छुट हुन्छ।',
-    deductionCaps: 'कटौती सीमा: अवकाश कोष वास्तविक योगदान, आम्दानीको एक-तिहाइ, वा रु ५,००,००० मध्ये कम · जीवन बीमा रु ४०,००० सम्म · स्वास्थ्य बीमा रु २०,००० सम्म · दान रु १,००,००० वा समायोजित करयोग्य आम्दानीको ५% सम्म · दुर्गम क्षेत्र भत्ता वर्गीकरण अनुसार रु ५०,००० सम्म।',
+    deductionCaps: 'अवकाश कोष वास्तविक योगदान, आम्दानीको एक-तिहाइ, वा रु ५,००,००० मध्ये कम · जीवन बीमा रु ४०,००० सम्म · स्वास्थ्य बीमा रु २०,००० सम्म · छोराछोरीको शिक्षा शुल्क वार्षिक शुल्कको २५% वा रु २५,००० मध्ये जुन कम हुन्छ (आव २०८३/८४ देखि) · दान रु १,००,००० वा समायोजित करयोग्य आम्दानीको ५% सम्म · दुर्गम क्षेत्र भत्ता वर्गीकरण अनुसार रु ५०,००० सम्म।',
     individualCouple: 'व्यक्तिगत र दम्पती: करदाता प्रकारको आधारमा तह सीमा स्वत: रूपमा समायोजन हुन्छ।',
     privacyDisclaimer: 'गोपनीयता र अस्वीकरण',
     noDataStored: 'कुनै पनि डाटा भण्डारण वा प्रसारण गरिँदैन। सबै गणना पूर्ण रूपमा तपाईंको ब्राउजरमा चल्छ। हामी तपाईंको कुनै पनि वित्तीय जानकारी संकलन, भण्डारण, वा साझा गर्दैनौं।',

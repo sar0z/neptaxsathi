@@ -18,6 +18,7 @@ export interface DeductionInput {
   insurance: number; // Life insurance premium
   medicalInsurance: number; // Medical insurance premium
   donations: number;
+  education?: number; // Children education tuition fee
 }
 
 export interface TaxInput {
@@ -50,6 +51,7 @@ export interface VariableTaxInput {
   insurance: number;       // Annual life insurance
   medicalInsurance: number; // Annual medical insurance
   donations: number;       // Annual donations
+  education: number;       // Annual children education tuition fee
   monthsData: MonthlyInputRow[];
   remoteAreaCategory?: "none" | "A" | "B" | "C" | "D" | "E";
 }
@@ -84,7 +86,7 @@ export interface SlabComputation {
 }
 
 export interface DeductionComputation {
-  key: "retirement" | "lifeInsurance" | "medicalInsurance" | "donations" | "remoteArea";
+  key: "retirement" | "lifeInsurance" | "medicalInsurance" | "donations" | "remoteArea" | "education";
   label: string;
   entered: number;
   allowed: number;

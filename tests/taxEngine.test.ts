@@ -33,6 +33,7 @@ const input = (overrides: TaxInputOverrides = {}): TaxInput => {
       insurance: 0,
       medicalInsurance: 0,
       donations: 0,
+      education: 0,
       ...deductions,
     },
   };
@@ -200,6 +201,73 @@ assert.equal(
   );
   assert.equal(actualE.totalDeductions, 10_000);
   assert.equal(actualE.taxableIncome, 490_000);
+}
+
+// Children's education tuition fee deduction tests
+{
+  // 1. Old regime: tuition fee gets Rs 0 allowed
+  const actualOld = result(
+    input({
+      income: { salary: 600_000 },
+      deductions: { education: 100_000 },
+    }),
+    oldRegime
+  );
+  assert.equal(actualOld.totalDeductions, 0);
+  assert.equal(actualOld.taxableIncome, 600_000);
+  
+  // 2. New regime: 25% of tuition fees paid is lower (80k paid -> 20k allowed)
+  const actualNew20k = result(
+    input({
+      income: { salary: 600_000 },
+      deductions: { education: 80_000 },
+    }),
+    newRegime
+  );
+  assert.equal(actualNew20k.totalDeductions, 20_000);
+  assert.equal(actualNew20k.taxableIncome, 580_000);
+  assert.equal(actualNew20k.deductionBreakdown.find(d => d.key === "education")?.capped, false);
+
+  // 3. New regime: Rs 25,000 cap is lower (200k paid -> 25k allowed)
+  const actualNew25k = result(
+    input({
+      income: { salary: 600_000 },
+      deductions: { education: 200_000 },
+    }),
+    newRegime
+  );
+  assert.equal(actualNew25k.totalDeductions, 25_000);
+  assert.equal(actualNew25k.taxableIncome, 575_000);
+  assert.equal(actualNew25k.deductionBreakdown.find(d => d.key === "education")?.capped, true);
+
+  // 4. New regime: remaining income cap (Salary 100k - remote 50k - life 40k = 10k left)
+  const actualRemainingIncome = result(
+    input({
+      income: { salary: 100_000 },
+      remoteAreaCategory: "A", // 50k
+      deductions: { insurance: 40_000, education: 80_000 }, // education 25% is 20k, but only 10k remaining
+    }),
+    newRegime
+  );
+  assert.equal(actualRemainingIncome.totalDeductions, 100_000);
+  assert.equal(actualRemainingIncome.taxableIncome, 0);
+  const eduBreakdown = actualRemainingIncome.deductionBreakdown.find(d => d.key === "education");
+  assert.equal(eduBreakdown?.allowed, 10_000);
+  assert.equal(eduBreakdown?.capped, true);
+
+  // 5. New regime: donation cap reduction (Adjusted taxable income reduces by education deduction)
+  const actualDonationCap = result(
+    input({
+      income: { salary: 600_000 },
+      deductions: { insurance: 40_000, education: 80_000, donations: 30_000 },
+    }),
+    newRegime
+  );
+  // Adjusted taxable income = 600k - 40k (life) - 20k (education) = 540k
+  // Donation cap = 5% of 540k = 27k
+  // Total deductions = 40k + 20k + 27k = 87k
+  assert.equal(actualDonationCap.totalDeductions, 87_000);
+  assert.equal(actualDonationCap.taxableIncome, 513_000);
 }
 
 console.log("taxEngine tests passed");

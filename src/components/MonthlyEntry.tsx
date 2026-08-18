@@ -172,6 +172,15 @@ function DeductionsTabContent({
           layout="vertical"
         />
         <MoneyInputRow
+          label={t('childrenEducationPremium')}
+          value={varInput.education || 0}
+          onChange={(v) => setVal("education", v)}
+          onCalculator={() => openCalculator("education", varInput.education || 0)}
+          currency={currency}
+          language={language}
+          layout="vertical"
+        />
+        <MoneyInputRow
           label={t('donations')}
           value={varInput.donations}
           onChange={(v) => setVal("donations", v)}

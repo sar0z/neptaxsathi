@@ -40,13 +40,14 @@ export function totalIncome(input: TaxInput): number {
   );
 }
 
-export function totalDeductions(input: TaxInput): number {
-  return calculateAllowedDeductions(totalIncome(input), input).total;
+export function totalDeductions(input: TaxInput, regimeId?: string): number {
+  return calculateAllowedDeductions(totalIncome(input), input, regimeId).total;
 }
 
 export function calculateAllowedDeductions(
   incomeBeforeRetirementDeduction: number,
-  input: TaxInput
+  input: TaxInput,
+  regimeId?: string
 ): { breakdown: DeductionComputation[]; total: number } {
   const d = input.deductions;
   
@@ -85,9 +86,18 @@ export function calculateAllowedDeductions(
   const medicalAllowed = Math.min(medicalEntered, 20_000, remainingIncome);
   remainingIncome = Math.max(0, remainingIncome - medicalAllowed);
 
-  // 5. Donations
+  // 5. Children Education Tuition Fee (Only for FY 2083/84 onwards)
+  const educationEntered = Math.max(0, d.education || 0);
+  let educationAllowed = 0;
+  if (regimeId === "new") {
+    const educationCap = Math.min(educationEntered * 0.25, 25_000);
+    educationAllowed = Math.min(educationCap, remainingIncome);
+    remainingIncome = Math.max(0, remainingIncome - educationAllowed);
+  }
+
+  // 6. Donations
   // Adjusted taxable income is before donations but after all other deductions
-  const adjustedTaxableIncome = Math.max(0, incomeBeforeRetirementDeduction - retirementLimit - remoteAreaAllowed - lifeAllowed - medicalAllowed);
+  const adjustedTaxableIncome = Math.max(0, incomeBeforeRetirementDeduction - retirementLimit - remoteAreaAllowed - lifeAllowed - medicalAllowed - educationAllowed);
   const donationsEntered = Math.max(0, d.donations || 0);
   const donationCap = Math.min(100_000, adjustedTaxableIncome * 0.05);
   const donationsAllowed = Math.min(donationsEntered, donationCap, remainingIncome);
@@ -120,6 +130,15 @@ export function calculateAllowedDeductions(
       entered: round2(medicalEntered),
       allowed: round2(medicalAllowed),
       capped: medicalEntered > 20_000,
+    },
+    {
+      key: "education",
+      label: "Children education tuition fee",
+      entered: round2(educationEntered),
+      allowed: round2(educationAllowed),
+      capped: regimeId === "new"
+        ? (educationEntered > 0 && educationAllowed < educationEntered * 0.25)
+        : (educationEntered > 0),
     },
     {
       key: "donations",
@@ -180,7 +199,7 @@ export function calculateRegime(
 ): RegimeResult {
   const income = totalIncome(input);
   const { breakdown: deductionBreakdown, total: deductions } =
-    calculateAllowedDeductions(income, input);
+    calculateAllowedDeductions(income, input, regime.id);
   const taxableIncome = Math.max(0, income - deductions);
 
   // pick slab set
@@ -300,6 +319,7 @@ export function calculateVariableTDS(
         insurance: input.insurance,
         medicalInsurance: input.medicalInsurance,
         donations: input.donations,
+        education: input.education,
       },
       remoteAreaCategory: input.remoteAreaCategory,
     };
@@ -354,6 +374,7 @@ export function calculateVariableTDS(
       insurance: input.insurance,
       medicalInsurance: input.medicalInsurance,
       donations: input.donations,
+      education: input.education,
     },
     remoteAreaCategory: input.remoteAreaCategory,
   };

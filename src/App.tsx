@@ -92,6 +92,7 @@ export interface VarInputState {
   insurance: number;
   medicalInsurance: number;
   donations: number;
+  education: number;
   monthsData: MonthlyRowData[];
   remoteAreaCategory?: "none" | "A" | "B" | "C" | "D" | "E";
 }
@@ -107,6 +108,7 @@ const createDefaultVarInput = (): VarInputState => ({
   insurance: 0,
   medicalInsurance: 0,
   donations: 0,
+  education: 0,
   remoteAreaCategory: "none",
   monthsData: MONTH_NAMES_APP.map((m) => ({
     id: crypto.randomUUID(),
@@ -143,6 +145,7 @@ const DEFAULT_INPUT: TaxInput = {
     insurance: 0,
     medicalInsurance: 0,
     donations: 0,
+    education: 0,
   },
   remoteAreaCategory: "none",
 };
